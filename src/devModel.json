@@ -1,5 +1,151 @@
 {
-  "hello": "world",
-  "ts": 0,
-  "user": { "name": "Dev User" }
+  "status": "draft",
+  "language": "en",
+  "bilingual": true,
+  "pageSize": "Letter",
+  "type": "prac",
+  "id_Project": 1001,
+  "attachments": ["Location Map", "Zoning Map"],
+  "property": true,
+  "to": {
+    "en": "Southeast Planning Review and Adjustment Committee",
+    "fr": "Comité de révision de planification du Sud-est"
+  },
+  "svgHeader": null,
+  "svgFooter": null,
+  "fields": {
+    "subject": {
+      "en": "Variance request for accessory building",
+      "fr": "Demande de derogation pour un batiment accessoire"
+    },
+    "meetingDate": {
+      "en": "2025-02-01",
+      "fr": "2025-02-01"
+    },
+    "agendaItem": {
+      "en": "2B",
+      "fr": "2B"
+    },
+    "fileNumber": {
+      "bi": "26-12345"
+    },
+    "applicant": "Riverbend Homes Ltd.",
+    "landowner": "Riverbend Holdings Inc.",
+    "proposal": {
+      "en": "The applicant is requesting a variance to reduce the side yard setback for a detached garage.\n\n- Existing lot is constrained by grade\n- No changes are proposed to the dwelling",
+      "fr": "Le requerant demande une derogation afin de reduire la marge laterale pour un garage detache.\n\n- Le terrain existant est contraint par la topographie\n- Aucun changement n'est propose a l'habitation"
+    },
+    "pid": {
+      "bi": "70234567"
+    },
+    "lotSize": {
+      "en": "1,480 m2",
+      "fr": "1 480 m2"
+    },
+    "location": {
+      "en": "145 Harbour View Drive",
+      "fr": "145, promenade Harbour View"
+    },
+    "municipality": {
+      "bi": "Example Municipality"
+    },
+    "zoning": {
+      "en": "R-1 Single Unit Residential",
+      "fr": "R-1 Residentiel unifamilial"
+    },
+    "futureUse": {
+      "en": "Neighbourhood Residential",
+      "fr": "Residentiel de quartier"
+    },
+    "currentUse": {
+      "en": "Single unit dwelling",
+      "fr": "Habitation unifamiliale"
+    },
+    "surroundingUse": {
+      "en": "Residential uses to the north, south, and west; collector road to the east.",
+      "fr": "Usages residentiels au nord, au sud et a l'ouest; voie collectrice a l'est."
+    },
+    "municipalServices": {
+      "en": "Water and sewer services are available.",
+      "fr": "Les services d'eau et d'egout sont disponibles."
+    },
+    "access": {
+      "en": "Access is provided by Harbour View Drive.",
+      "fr": "L'acces se fait par la promenade Harbour View."
+    },
+    "detail": [
+      {
+        "name": {
+          "en": "Analysis",
+          "fr": "Analyse"
+        },
+        "value": {
+          "en": "The requested variance is minor in scale and maintains the intent of the zoning by-law.\n\n| Test | Result |\n| --- | --- |\n| Neighbourhood fit | Pass |\n| Servicing impact | None |",
+          "fr": "La derogation demandee est mineure et respecte l'intention du reglement de zonage.\n\n| Critere | Resultat |\n| --- | --- |\n| Integration au quartier | Conforme |\n| Impact sur les services | Aucun |"
+        }
+      },
+      {
+        "name": {
+          "en": "Recommendation",
+          "fr": "Recommendation"
+        },
+        "value": {
+          "en": "Staff recommend approval subject to standard conditions.",
+          "fr": "Le personnel recommande l'approbation sous reserve des conditions habituelles."
+        }
+      }
+    ]
+  },
+  "images": {
+    "propertyLocation": {
+      "id": 1,
+      "filename": "property-location.png",
+      "url": "https://dummyimage.com/800x800/e2e8f0/334155.png&text=Property+Map"
+    }
+  },
+  "signatures": [
+    {
+      "id_Role": 10,
+      "label": {
+        "en": "From",
+        "fr": "De"
+      },
+      "user": {
+        "name": "Alex Mercer",
+        "title": {
+          "en": "Planner",
+          "fr": "Urbaniste"
+        },
+        "signature": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2P8//8/AwAI/AL+vD0pagAAAABJRU5ErkJggg=="
+      }
+    },
+    {
+      "id_Role": 20,
+      "label": {
+        "en": "Reviewed by",
+        "fr": "Révisé par"
+      },
+      "user": null
+    }
+  ],
+  "exhibits": [
+    {
+      "title": {
+        "en": "Location",
+        "fr": "Emplacement"
+      },
+      "description": {
+        "en": "The subject lands are shown in relation to the surrounding street network.",
+        "fr": "Les terrains vises sont presentes par rapport au reseau routier environnant."
+      },
+      "images": {
+        "a": {
+          "id": 2,
+          "filename": "exhibit-location.png",
+          "url": "https://dummyimage.com/1200x700/fde68a/78350f.png&text=Exhibit+A",
+          "sizeInches": 4.5
+        }
+      }
+    }
+  ]
 }

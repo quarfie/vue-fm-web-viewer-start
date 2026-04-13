@@ -4,6 +4,6 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import { fmBootstrap } from '@/fm'
 
-fmBootstrap({ readyScript: 'JS My App Load' })
+fmBootstrap()
 
 createApp(App).mount('#app')

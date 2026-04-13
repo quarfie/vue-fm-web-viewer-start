@@ -1,18 +1,18 @@
-# Your App Name Here
+# Universal Print Module
 
 **Made with vue-fm-web-viewer-start**
 
-## App Notes (customize this section for your app)
+## App Notes
 
 Use this section to capture app-specific rules before coding starts.
 
-- App name: _TBD_
-- Business goal: _what this viewer must accomplish_
-- UX scope: _MVP boundaries, in-scope and out-of-scope behavior_
-- FileMaker scripts: _ready/load script, action scripts, callback names_
-- Setup payload contract: _required keys, optional keys, error keys_
-- Naming conventions: _script naming, component naming, model field naming_
-- Guardrails: _performance limits, security/privacy constraints, browser/FM version assumptions_
+- App name: Universal Print Module
+- Business goal: Render editable bilingual planning reports in a FileMaker Web Viewer, persist report JSON back to FileMaker, and hand rendered HTML back for PDF generation.
+- UX scope: Draft reports are editable; finalized reports are read-only. Image selection, markdown editing, signatures, exhibits, and print/export markup are in scope.
+- FileMaker scripts: `JS Save Report JSON`, `JS-FM Get Images List`, `JS Sign Document`, `Receive Report HTML`. Legacy source did not reveal a reliable ready/load script, so the converted app currently boots without one and expects direct `setup(json)` or later wiring.
+- Setup payload contract: include `status`, `language`, `bilingual`, `type`, `fields`, `signatures`; may also include `id_Project`, `attachments`, `property`, `svgHeader`, `svgFooter`, `to`, `images`, `exhibits`, and `pageSize`.
+- Naming conventions: FileMaker callbacks exposed to `window` should remain explicit and stable. Report field keys should stay aligned with FileMaker JSON keys.
+- Guardrails: Keep report layout print-safe on Letter/Legal pages, avoid direct `window.FileMaker` calls in components, preserve single-file build compatibility, and do not enable edits once status is `final`.
 
 ### New App Checklist
 

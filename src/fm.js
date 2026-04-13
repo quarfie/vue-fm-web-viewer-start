@@ -1,4 +1,4 @@
-import { model } from './model'
+import { replaceModel } from './model'
 
 let onSetupCallback = null
 export function onSetup(fn) {
@@ -101,7 +101,7 @@ function watchFileMaker({ intervalMs = 25, timeoutMs = 1500, onReady, onTimeout 
 export function setup(json) {
   try {
     const data = typeof json === 'string' ? JSON.parse(json) : json
-    Object.assign(model, data)
+    replaceModel(data)
     // Call the onSetup callback if registered (e.g. from App.vue) to notify that model has been initialized with data from FileMaker. pass in the data for convenience, but it can also be accessed via the reactive `model`.
     onSetupCallback?.(data)
     console.log('setup() received data:', data)
@@ -130,7 +130,7 @@ export function fmBootstrap({ readyScript = null, timeoutMs = 1500 } = {}) {
         try {
           const dev = await import('./devModel.json')
           setup(dev.default ?? dev)
-        } catch (e) {
+        } catch {
           setup({ error: 'No FileMaker object or devModel.json' })
         }
         return

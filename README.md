@@ -1,26 +1,29 @@
-# Your App Name Here
+# Universal Print Module
 
 **Made with vue-fm-web-viewer-start**
 
-## App Notes (customize this section for your app)
+## App Notes
 
-- Update this section first when creating a new app from this template.
-- App name: _TBD_
-- Purpose: _1-2 sentence summary of what this web viewer does_
-- FileMaker ready script (`loadScript`): _e.g. `JS My App Load`_
-- FileMaker -> Web entry point: `setup(json)`
-- Setup payload shape: _list required + optional keys_
-- Known constraints: _layout assumptions, privileges, env requirements_
+- App name: Universal Print Module
+- Purpose: Generate bilingual planning/staff reports inside a FileMaker Web Viewer, allow controlled editing while draft, and export the rendered document HTML for PDF generation.
+- FileMaker ready script (`loadScript`): Not inferred from the legacy FMVue source. This conversion currently expects FileMaker to call `setup(json)` directly or for a real ready script to be wired later.
+- FileMaker -> Web entry points: `setup(json)`, `insertImagesList(json)`, `insertSignature(id_Role, userJson)`, `getAsHtml()`
+- FileMaker action scripts used by the UI: `JS Save Report JSON`, `JS-FM Get Images List`, `JS Sign Document`, `Receive Report HTML`
+- Setup payload shape:
+  - Required: `status`, `language`, `bilingual`, `type`, `fields`, `signatures`
+  - Optional: `id_Project`, `attachments`, `property`, `svgHeader`, `svgFooter`, `to`, `images`, `exhibits`, `pageSize`
+- Known constraints:
+  - Editing is disabled once `status === 'final'`
+  - The current UI keeps `meetingDate` editable, matching the legacy note
+  - `pid`, `municipality`, `applicant`, and `landowner` render as read-only content
+  - Finalization requires all signature slots to contain a `user` object
 
-### New App Checklist
+### Migration Notes
 
-- Replace `Your App Name Here` in this file and `.github/copilot-instructions.md`
-- Rename the project folder to your real app name, then run `npm install`.
-- If `package.json` is still `vue-fm-web-viewer-start`, install auto-updates it to a sanitized version of the current folder name.
-
-- Set the real `loadScript` in `src/main.js`
-- Confirm `setup(json)` payload keys and update docs to match
-- Replace placeholder values in **App Notes**
+- The legacy FMVue app embedded `[[data_model]]` directly in the page. This Vue conversion now uses the starter bridge and expects FileMaker data through `setup(json)`.
+- All direct `FileMaker.PerformScript(...)` calls were migrated to `fmPerform(...)` through [src/fm.js](src/fm.js).
+- The report still exposes callback functions for FileMaker, but they are now registered explicitly in [src/App.vue](src/App.vue).
+- Production builds still emit one self-contained HTML file at `dist/index.html`.
 
 ## vue-fm-web-viewer-start
 
