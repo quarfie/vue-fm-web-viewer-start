@@ -1,8 +1,8 @@
 <script setup>
 import { toRef } from 'vue'
 
-import SmallField from '@/components/SmallField.vue'
-import { useBilingualBiSlots, useBilingualSlots } from '@/composables/useBilingualSlots'
+import MarkdownField from '@/components/MarkdownField.vue'
+import { useBilingualSlots } from '@/composables/useBilingualSlots'
 
 const props = defineProps({
   labelen: {
@@ -14,12 +14,8 @@ const props = defineProps({
     required: true,
   },
   text: {
-    type: [String, Object],
+    type: Object,
     required: true,
-  },
-  editable: {
-    type: Boolean,
-    default: false,
   },
   language: {
     type: String,
@@ -33,33 +29,40 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  /**
+   * When true, fields stack vertically instead of sitting side-by-side.
+   * Use `stacked` for fields that live inside a single-column layout (e.g. Proposal).
+   * Default (false) is side-by-side, used for detail sections in the two-column grid.
+   */
+  stacked: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['update-field', 'editing-change'])
 
-const sharedArgs = {
+const slots = useBilingualSlots({
   language: toRef(props, 'language'),
   bilingual: toRef(props, 'bilingual'),
   labelen: toRef(props, 'labelen'),
   labelfr: toRef(props, 'labelfr'),
   text: toRef(props, 'text'),
-}
-
-const isBi = typeof props.text === 'object' && props.text !== null && 'bi' in props.text
-const slots = isBi ? useBilingualBiSlots(sharedArgs) : useBilingualSlots(sharedArgs)
+})
 </script>
 
 <template>
   <div
-    class="my-1 grid gap-x-6 gap-y-2 text-sm"
-    :class="bilingual ? 'grid-cols-2' : 'grid-cols-1'"
+    :class="stacked
+      ? 'my-2 space-y-4'
+      : ['mt-5 flex gap-6', bilingual ? 'flex-row' : 'flex-col']"
   >
-    <SmallField
+    <MarkdownField
       v-for="slot in slots"
-      :key="slot.key + slot.label"
+      :key="slot.key"
+      class="flex-1"
       :label="slot.label"
       :text="slot.value"
-      :editable="editable"
       :disabled="disabled"
       @editing-change="(value) => emit('editing-change', value)"
       @update:text="(value) => emit('update-field', { key: slot.key, value })"

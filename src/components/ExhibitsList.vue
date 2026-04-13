@@ -2,8 +2,9 @@
 import { ref } from 'vue'
 
 import LibraryImage from '@/components/LibraryImage.vue'
-import MarkdownField from '@/components/MarkdownField.vue'
+import MarkdownBilingual from '@/components/MarkdownBilingual.vue'
 import TextEditable from '@/components/TextEditable.vue'
+import { bilingualSlots } from '@/composables/useBilingualSlots'
 
 const props = defineProps({
   exhibits: {
@@ -103,28 +104,16 @@ function updateImage(index, value) {
       </div>
 
       <div class="grid gap-6" :class="bilingual ? 'grid-cols-2' : 'grid-cols-1'">
-        <h2 v-if="language === 'en'" class="mb-2 text-lg font-semibold text-slate-900">
+        <h2
+          v-for="slot in bilingualSlots(language, bilingual, '', '', exhibit.title)"
+          :key="slot.key"
+          class="mb-2 text-lg font-semibold text-slate-900"
+        >
           <TextEditable
-            :text="exhibit.title.en"
+            :text="slot.value"
             :disabled="disabled"
             @editing-change="(value) => emit('editing-change', value)"
-            @update:text="(value) => updateTitle(index, 'en', value)"
-          />
-        </h2>
-        <h2 v-if="language === 'fr' || bilingual" class="mb-2 text-lg font-semibold text-slate-900">
-          <TextEditable
-            :text="exhibit.title.fr"
-            :disabled="disabled"
-            @editing-change="(value) => emit('editing-change', value)"
-            @update:text="(value) => updateTitle(index, 'fr', value)"
-          />
-        </h2>
-        <h2 v-if="language === 'fr' && bilingual" class="mb-2 text-lg font-semibold text-slate-900">
-          <TextEditable
-            :text="exhibit.title.en"
-            :disabled="disabled"
-            @editing-change="(value) => emit('editing-change', value)"
-            @update:text="(value) => updateTitle(index, 'en', value)"
+            @update:text="(value) => updateTitle(index, slot.key, value)"
           />
         </h2>
       </div>
@@ -138,29 +127,17 @@ function updateImage(index, value) {
         @update:image="(value) => updateImage(index, value)"
       />
 
-      <div class="mt-4 grid gap-6" :class="bilingual ? 'grid-cols-2' : 'grid-cols-1'">
-        <MarkdownField
-          v-if="language === 'en'"
-          :text="exhibit.description.en"
-          :disabled="disabled"
-          @editing-change="(value) => emit('editing-change', value)"
-          @update:text="(value) => updateDescription(index, 'en', value)"
-        />
-        <MarkdownField
-          v-if="language === 'fr' || bilingual"
-          :text="exhibit.description.fr"
-          :disabled="disabled"
-          @editing-change="(value) => emit('editing-change', value)"
-          @update:text="(value) => updateDescription(index, 'fr', value)"
-        />
-        <MarkdownField
-          v-if="language === 'fr' && bilingual"
-          :text="exhibit.description.en"
-          :disabled="disabled"
-          @editing-change="(value) => emit('editing-change', value)"
-          @update:text="(value) => updateDescription(index, 'en', value)"
-        />
-      </div>
+      <MarkdownBilingual
+        class="mt-4"
+        labelen=""
+        labelfr=""
+        :text="exhibit.description"
+        :language="language"
+        :bilingual="bilingual"
+        :disabled="disabled"
+        @editing-change="(value) => emit('editing-change', value)"
+        @update-field="({ key, value }) => updateDescription(index, key, value)"
+      />
     </article>
   </div>
 </template>

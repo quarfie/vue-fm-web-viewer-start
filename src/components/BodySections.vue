@@ -1,5 +1,5 @@
 <script setup>
-import MarkdownFieldTwoColumn from '@/components/MarkdownFieldTwoColumn.vue'
+import MarkdownBilingual from '@/components/MarkdownBilingual.vue'
 
 defineProps({
   sections: {
@@ -26,7 +26,7 @@ const emit = defineEmits(['update-section-field', 'editing-change'])
 <template>
   <div>
     <div v-for="(section, index) in sections" :key="index" class="break-inside-avoid mt-5">
-      <MarkdownFieldTwoColumn
+      <MarkdownBilingual
         :labelen="section.name?.en ?? ''"
         :labelfr="section.name?.fr ?? ''"
         :text="section.value"

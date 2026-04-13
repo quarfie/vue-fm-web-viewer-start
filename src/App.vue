@@ -4,7 +4,7 @@ import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import BodySections from '@/components/BodySections.vue'
 import ExhibitsList from '@/components/ExhibitsList.vue'
 import LibraryImage from '@/components/LibraryImage.vue'
-import MarkdownFieldStacked from '@/components/MarkdownFieldStacked.vue'
+import MarkdownBilingual from '@/components/MarkdownBilingual.vue'
 import ReportSignature from '@/components/ReportSignature.vue'
 import SmallFieldTwoColumn from '@/components/SmallFieldTwoColumn.vue'
 import { exhibitTypes, getReportType } from '@/constants'
@@ -495,13 +495,14 @@ onMounted(() => {
                 <p>{{ model.fields.landowner }}</p>
               </div>
 
-              <MarkdownFieldStacked
+              <MarkdownBilingual
                 labelen="Proposal"
                 labelfr="Demande"
                 :text="model.fields.proposal"
                 :language="currentLanguage"
                 :bilingual="bilingual"
                 :disabled="isFinal"
+                stacked
                 @update-field="(payload) => updateFieldValue(model.fields.proposal, payload)"
                 @editing-change="handleEditingChange"
               />
@@ -509,7 +510,7 @@ onMounted(() => {
           </div>
 
           <div class="mr-1 flex h-fit flex-col items-center justify-start border border-black">
-            <div class="flex h-[9cm] w-[9cm] flex-shrink-0 items-center justify-center border-b">
+            <div class="flex h-[9cm] w-[9cm] shrink-0 items-center justify-center border-b">
               <LibraryImage
                 :image="model.images.propertyLocation"
                 :image-library="imageLibrary"
@@ -829,6 +830,7 @@ onMounted(() => {
 @media print {
   body {
     -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
     color: black;
     background-color: transparent;
   }
