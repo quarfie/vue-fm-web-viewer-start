@@ -97,6 +97,24 @@ function watchFileMaker({ intervalMs = 25, timeoutMs = 1500, onReady, onTimeout 
   }, intervalMs)
 }
 
+function resolveDevPayload(devData) {
+  if (!devData || typeof devData !== 'object' || Array.isArray(devData)) {
+    return devData
+  }
+
+  const selectedKey = devData._selectPayload
+  if (typeof selectedKey !== 'string' || !selectedKey.trim()) {
+    return devData
+  }
+
+  const payload = devData[selectedKey]
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error(`devModel.json _selectPayload key not found or invalid: ${selectedKey}`)
+  }
+
+  return payload
+}
+
 /* ---------- setup(json) (FileMaker -> Web) ---------- */
 export function setup(json) {
   try {
@@ -129,7 +147,7 @@ export function fmBootstrap({ readyScript = null, timeoutMs = 1500 } = {}) {
         console.info('Browser dev mode')
         try {
           const dev = await import('./devModel.json')
-          setup(dev.default ?? dev)
+          setup(resolveDevPayload(dev.default ?? dev))
         } catch {
           setup({ runtime: { error: 'No FileMaker object or devModel.json' } })
         }

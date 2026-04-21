@@ -1,164 +1,281 @@
 {
-  "schemaVersion": 2,
-  "meta": {
-    "status": "draft",
-    "language": "en",
-    "bilingual": true,
-    "pageSize": "Letter"
-  },
-  "template": {
-    "options": {
-      "type": "prac",
-      "property": true
-    }
-  },
-  "content": {
-    "attachments": [
-      {
-        "filename": "site-plan.pdf",
-        "url": "https://example.com/site-plan.pdf"
-      }
-    ],
-    "fields": {
-      "to": {
-        "en": "Southeast Planning Review and Adjustment Committee",
-        "fr": "Comite de revision de planification du Sud-est"
-      },
-      "subject": {
-        "en": "Variance request for accessory building",
-        "fr": "Demande de derogation pour un batiment accessoire"
-      },
-      "meetingDate": {
-        "en": "2025-02-01",
-        "fr": "2025-02-01"
-      },
-      "agendaItem": {
-        "en": "2B",
-        "fr": "2B"
-      },
-      "fileNumber": "26-12345",
-      "applicant": "Riverbend Homes Ltd.",
-      "landowner": "Riverbend Holdings Inc.",
-      "proposal": {
-        "en": "The applicant is requesting a variance to reduce the side yard setback for a detached garage.\n\n- Existing lot is constrained by grade\n- No changes are proposed to the dwelling",
-        "fr": "Le requerant demande une derogation afin de reduire la marge laterale pour un garage detache.\n\n- Le terrain existant est contraint par la topographie\n- Aucun changement n'est propose a l'habitation"
-      },
-      "pid": "70234567",
-      "lotSize": {
-        "en": "1,480 m2",
-        "fr": "1 480 m2"
-      },
-      "location": {
-        "en": "145 Harbour View Drive",
-        "fr": "145, promenade Harbour View"
-      },
-      "municipality": "Example Municipality",
-      "zoning": {
-        "en": "R-1 Single Unit Residential",
-        "fr": "R-1 Residentiel unifamilial"
-      },
-      "futureUse": {
-        "en": "Neighbourhood Residential",
-        "fr": "Residentiel de quartier"
-      },
-      "currentUse": {
-        "en": "Single unit dwelling",
-        "fr": "Habitation unifamiliale"
-      },
-      "surroundingUse": {
-        "en": "Residential uses to the north, south, and west; collector road to the east.",
-        "fr": "Usages residentiels au nord, au sud et a l'ouest; voie collectrice a l'est."
-      },
-      "municipalServices": {
-        "en": "Water and sewer services are available.",
-        "fr": "Les services d'eau et d'egout sont disponibles."
-      },
-      "access": {
-        "en": "Access is provided by Harbour View Drive.",
-        "fr": "L'acces se fait par la promenade Harbour View."
+  "_selectPayload": "pracStaffReport",
+  "pracStaffReport": {
+    "schemaVersion": 2,
+    "meta": {
+      "status": "draft",
+      "language": "en",
+      "bilingual": true,
+      "pageSize": "Letter"
+    },
+    "template": {
+      "name": "StaffReport",
+      "options": {
+        "type": "prac",
+        "property": true
       }
     },
-    "detail": [
-      {
-        "name": {
-          "en": "Analysis",
-          "fr": "Analyse"
+    "content": {
+      "attachments": [
+        {
+          "filename": "site-plan.pdf",
+          "url": "https://example.com/site-plan.pdf"
+        }
+      ],
+      "fields": {
+        "to": {
+          "en": "Southeast Planning Review and Adjustment Committee",
+          "fr": "Comite de revision de planification du Sud-est"
         },
-        "value": {
-          "en": "The requested variance is minor in scale and maintains the intent of the zoning by-law.\n\n| Test | Result |\n| --- | --- |\n| Neighbourhood fit | Pass |\n| Servicing impact | None |",
-          "fr": "La derogation demandee est mineure et respecte l'intention du reglement de zonage.\n\n| Critere | Resultat |\n| --- | --- |\n| Integration au quartier | Conforme |\n| Impact sur les services | Aucun |"
+        "subject": {
+          "en": "Variance request for accessory building",
+          "fr": "Demande de derogation pour un batiment accessoire"
+        },
+        "meetingDate": {
+          "en": "2025-02-01",
+          "fr": "2025-02-01"
+        },
+        "agendaItem": {
+          "en": "2B",
+          "fr": "2B"
+        },
+        "fileNumber": "26-12345",
+        "applicant": "Riverbend Homes Ltd.",
+        "landowner": "Riverbend Holdings Inc.",
+        "proposal": {
+          "en": "The applicant is requesting a variance to reduce the side yard setback for a detached garage.\n\n- Existing lot is constrained by grade\n- No changes are proposed to the dwelling",
+          "fr": "Le requerant demande une derogation afin de reduire la marge laterale pour un garage detache.\n\n- Le terrain existant est contraint par la topographie\n- Aucun changement n'est propose a l'habitation"
+        },
+        "pid": "70234567",
+        "lotSize": {
+          "en": "1,480 m2",
+          "fr": "1 480 m2"
+        },
+        "location": {
+          "en": "145 Harbour View Drive",
+          "fr": "145, promenade Harbour View"
+        },
+        "municipality": "Example Municipality",
+        "zoning": {
+          "en": "R-1 Single Unit Residential",
+          "fr": "R-1 Residentiel unifamilial"
+        },
+        "futureUse": {
+          "en": "Neighbourhood Residential",
+          "fr": "Residentiel de quartier"
+        },
+        "currentUse": {
+          "en": "Single unit dwelling",
+          "fr": "Habitation unifamiliale"
+        },
+        "surroundingUse": {
+          "en": "Residential uses to the north, south, and west; collector road to the east.",
+          "fr": "Usages residentiels au nord, au sud et a l'ouest; voie collectrice a l'est."
+        },
+        "municipalServices": {
+          "en": "Water and sewer services are available.",
+          "fr": "Les services d'eau et d'egout sont disponibles."
+        },
+        "access": {
+          "en": "Access is provided by Harbour View Drive.",
+          "fr": "L'acces se fait par la promenade Harbour View."
         }
       },
-      {
-        "name": {
-          "en": "Recommendation",
-          "fr": "Recommendation"
-        },
-        "value": {
-          "en": "Staff recommend approval subject to standard conditions.",
-          "fr": "Le personnel recommande l'approbation sous reserve des conditions habituelles."
-        }
-      }
-    ],
-    "images": {
-      "propertyLocation": {
-        "image": {
-          "id": 1,
-          "filename": "property-location.png",
-          "url": "https://dummyimage.com/800x800/e2e8f0/334155.png&text=Property+Map"
-        },
-        "data": {
-          "legendColor": "#fdba74"
-        }
-      }
-    },
-    "signatures": [
-      {
-        "id_Role": 10,
-        "label": {
-          "en": "From",
-          "fr": "De"
-        },
-        "user": {
-          "name": "Alex Mercer",
-          "title": {
-            "en": "Planner",
-            "fr": "Urbaniste"
+      "detail": [
+        {
+          "name": {
+            "en": "Analysis",
+            "fr": "Analyse"
           },
-          "signature": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2P8//8/AwAI/AL+vD0pagAAAABJRU5ErkJggg=="
-        }
-      },
-      {
-        "id_Role": 20,
-        "label": {
-          "en": "Reviewed by",
-          "fr": "Revise par"
+          "value": {
+            "en": "The requested variance is minor in scale and maintains the intent of the zoning by-law.\n\n| Test | Result |\n| --- | --- |\n| Neighbourhood fit | Pass |\n| Servicing impact | None |",
+            "fr": "La derogation demandee est mineure et respecte l'intention du reglement de zonage.\n\n| Critere | Resultat |\n| --- | --- |\n| Integration au quartier | Conforme |\n| Impact sur les services | Aucun |"
+          }
         },
-        "user": null
-      }
-    ],
-    "exhibits": [
-      {
-        "title": {
-          "en": "Location",
-          "fr": "Emplacement"
-        },
-        "description": {
-          "en": "The subject lands are shown in relation to the surrounding street network.",
-          "fr": "Les terrains vises sont presentes par rapport au reseau routier environnant."
-        },
-        "images": {
-          "a": {
-            "id": 2,
-            "filename": "exhibit-location.png",
-            "url": "https://dummyimage.com/1200x700/fde68a/78350f.png&text=Exhibit+A",
-            "sizeInches": 4.5
+        {
+          "name": {
+            "en": "Recommendation",
+            "fr": "Recommendation"
+          },
+          "value": {
+            "en": "Staff recommend approval subject to standard conditions.",
+            "fr": "Le personnel recommande l'approbation sous reserve des conditions habituelles."
           }
         }
-      }
-    ]
+      ],
+      "images": {
+        "propertyLocation": {
+          "image": {
+            "id": 1,
+            "filename": "property-location.png",
+            "url": "https://dummyimage.com/800x800/e2e8f0/334155.png&text=Property+Map"
+          },
+          "data": {
+            "legendColor": "#fdba74"
+          }
+        }
+      },
+      "signatures": [
+        {
+          "id_Role": 10,
+          "label": {
+            "en": "From",
+            "fr": "De"
+          },
+          "user": {
+            "name": "Alex Mercer",
+            "title": {
+              "en": "Planner",
+              "fr": "Urbaniste"
+            },
+            "signature": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2P8//8/AwAI/AL+vD0pagAAAABJRU5ErkJggg=="
+          }
+        },
+        {
+          "id_Role": 20,
+          "label": {
+            "en": "Reviewed by",
+            "fr": "Revise par"
+          },
+          "user": null
+        }
+      ],
+      "exhibits": [
+        {
+          "title": {
+            "en": "Location",
+            "fr": "Emplacement"
+          },
+          "description": {
+            "en": "The subject lands are shown in relation to the surrounding street network.",
+            "fr": "Les terrains vises sont presentes par rapport au reseau routier environnant."
+          },
+          "images": {
+            "a": {
+              "id": 2,
+              "filename": "exhibit-location.png",
+              "url": "https://dummyimage.com/1200x700/fde68a/78350f.png&text=Exhibit+A",
+              "sizeInches": 4.5
+            }
+          }
+        }
+      ]
+    },
+    "runtime": {
+      "error": ""
+    }
   },
-  "runtime": {
-    "error": ""
+  "publicNotice": {
+    "schemaVersion": 2,
+    "meta": {
+      "status": "draft",
+      "language": "en",
+      "bilingual": true,
+      "pageSize": "Letter"
+    },
+    "template": {
+      "name": "PublicNotice",
+      "options": {}
+    },
+    "content": {
+      "attachments": [],
+      "fields": {
+        "applicant": "Bob Smith",
+        "author": {},
+        "date": {
+          "day": 9,
+          "month": 4,
+          "year": 2025
+        },
+        "description": {
+          "en": "Ruling of Compatibility application to determine whether a dog grooming use is similar to and/or compatible to a retail use in the General Commercial (C1) Zone",
+          "fr": "Demande pour determiner si un toilettage des chiens est similaire et/ou compatible a un usage de vente au detail dans la zone Commerciale generale (C1)"
+        },
+        "distanceMetres": 100,
+        "fileNumber": {
+          "bi": "25-12345"
+        },
+        "location": {
+          "en": "123 Any Street",
+          "fr": "123 rue Any"
+        },
+        "meetingDate": {
+          "day": 23,
+          "month": 4,
+          "year": 2025
+        },
+        "pid": {
+          "bi": "70673546"
+        },
+        "subject": {
+          "en": "Ruling of Compatibility",
+          "fr": "Demande de decision de compatibilite"
+        }
+      },
+      "detail": [],
+      "images": {},
+      "data": {
+        "municipality": {
+          "id": "5B049DC2-1EC2-4528-B52F-0A5E37B941C8",
+          "name": {
+            "en": "Town of Shediac",
+            "fr": "Ville de Shediac"
+          },
+          "nameShort": "Shediac",
+          "reviewCommittee": {
+            "meeting": {
+              "address": {
+                "en": "70 Enviro Drive, Berry Mills, NB",
+                "fr": "70, promenade Enviro, Berry Mills, NB"
+              },
+              "location": {
+                "en": "Southeast Regional Service Commission office",
+                "fr": "bureau de la Commission de services regionaux du Sud-Est"
+              },
+              "noticeUrl": {
+                "en": "https://plan360.ca/meetings",
+                "fr": "https://plan360.ca/fr/meetings"
+              },
+              "time": {
+                "hour": 19,
+                "minute": 0
+              }
+            },
+            "name": {
+              "en": "Southeast Planning Review and Adjustment Committee",
+              "fr": "Comite de revision de la planification de la Commission du Sud-Est"
+            }
+          }
+        }
+      },
+      "signatures": [
+        {
+          "id_Role": "A0DC1954-2F69-44F3-83AD-A77534C19573",
+          "label": {
+            "en": "From",
+            "fr": "De"
+          },
+          "user": {
+            "addressLine": {
+              "en": "1234 Main Street, 2nd Floor, Unit 200, Moncton, NB E1C 1H7",
+              "fr": "1234, rue Main, 2e etage, Unite 200, Moncton, NB E1C 1H7"
+            },
+            "email": "phil.robichaud@nbse.ca",
+            "id": "201C6FF8-3D87-442B-8AF8-9AB693BCC196",
+            "name": "Phil Robichaud",
+            "phone": "506-533-3640",
+            "signature": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2P8//8/AwAI/AL+vD0pagAAAABJRU5ErkJggg==",
+            "title": {
+              "en": "Planner",
+              "fr": "Urbaniste"
+            }
+          }
+        }
+      ],
+      "exhibits": []
+    },
+    "runtime": {
+      "error": ""
+    }
   }
 }

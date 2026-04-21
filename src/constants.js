@@ -8,48 +8,6 @@ export const exhibitTypes = [
   { en: 'Floor Plan', fr: "Plan d'etage" },
 ]
 
-export const reportTypes = [
-  {
-    type: 'prac',
-    name: {
-      en: 'Staff Report',
-      fr: 'Rapport du personnel',
-    },
-  },
-  {
-    _note: 'Amendments only',
-    type: 'preliminary',
-    name: {
-      en: 'Preliminary Staff Report',
-      fr: 'Rapport preliminaire du personnel',
-    },
-  },
-  {
-    _note: 'Amendments only',
-    type: 'public_hearing',
-    name: {
-      en: 'Public Hearing Report',
-      fr: "Rapport d'audience publique",
-    },
-  },
-  {
-    _note: 'Amendments only',
-    type: 'public_presentation',
-    name: {
-      en: 'Public Presentation Report',
-      fr: 'Rapport de presentation publique',
-    },
-  },
-  {
-    _note: 'Subdivisions only',
-    type: 'council_subdivision',
-    name: {
-      en: 'Council Report',
-      fr: 'Rapport au conseil',
-    },
-  },
-]
-
 export function createDefaultModel() {
   return {
     schemaVersion: 2,
@@ -60,33 +18,12 @@ export function createDefaultModel() {
       pageSize: 'Letter',
     },
     template: {
-      options: {
-        type: 'prac',
-        property: true,
-      },
+      name: '',
+      options: {},
     },
     content: {
       attachments: [],
-      fields: {
-        to: { en: '', fr: '' },
-        subject: { en: '', fr: '' },
-        meetingDate: { en: '', fr: '' },
-        agendaItem: { en: '', fr: '' },
-        fileNumber: '',
-        applicant: '',
-        landowner: '',
-        proposal: { en: '', fr: '' },
-        pid: '',
-        lotSize: { en: '', fr: '' },
-        location: { en: '', fr: '' },
-        municipality: '',
-        zoning: { en: '', fr: '' },
-        futureUse: { en: '', fr: '' },
-        currentUse: { en: '', fr: '' },
-        surroundingUse: { en: '', fr: '' },
-        municipalServices: { en: '', fr: '' },
-        access: { en: '', fr: '' },
-      },
+      fields: {},
       detail: [],
       images: {
         propertyLocation: {
@@ -96,6 +33,7 @@ export function createDefaultModel() {
           },
         },
       },
+      data: {},
       signatures: [],
       exhibits: [],
     },
@@ -138,8 +76,4 @@ export function mergeDefaults(base, incoming) {
   }
 
   return result
-}
-
-export function getReportType(type) {
-  return reportTypes.find((reportType) => reportType.type === type) ?? reportTypes[0]
 }

@@ -9,9 +9,11 @@
 - FileMaker ready script (`loadScript`): Not inferred from the legacy FMVue source. This conversion currently expects FileMaker to call `setup(json)` directly or for a real ready script to be wired later.
 - FileMaker -> Web entry points: `setup(json)`, `insertImagesList(json)`, `insertSignature(id_Role, userJson)`, `getAsHtml()`
 - FileMaker action scripts used by the UI: `JS Save Report JSON`, `JS-FM Get Images List`, `JS Sign Document`, `Receive Report HTML`
-- Setup payload shape:
-  - Required: `status`, `language`, `bilingual`, `type`, `fields`, `signatures`
-  - Optional: `id_Project`, `attachments`, `property`, `svgHeader`, `svgFooter`, `to`, `images`, `exhibits`, `pageSize`
+- Setup payload shape (schema v2):
+  - Root keys: `schemaVersion`, `meta`, `template`, `content`, optional `runtime`
+  - Template routing: `template.name` (for example `StaffReport`, `PublicNotice`)
+  - Staff subtypes stay in `template.options` (for example `template.options.type = 'prac'`)
+  - Local browser dev supports multi-payload `src/devModel.json` wrappers using `_selectPayload`
 - Known constraints:
   - Editing is disabled once `status === 'final'`
   - The current UI keeps `meetingDate` editable, matching the legacy note
@@ -23,15 +25,14 @@
 - The legacy FMVue app embedded `[[data_model]]` directly in the page. This Vue conversion now uses the starter bridge and expects FileMaker data through `setup(json)`.
 - All direct `FileMaker.PerformScript(...)` calls were migrated to `fmPerform(...)` through [src/fm.js](src/fm.js).
 - The report still exposes callback functions for FileMaker, but they are now registered explicitly in [src/App.vue](src/App.vue).
-- Production builds still emit one self-contained HTML file at `dist/index.html`.
+- Production builds emit standard Vite assets in `dist/` for hosted deployment.
 
 ## vue-fm-web-viewer-start
 
-This repository is a starter template for building **FileMaker Web Viewer apps**
+This repository started as a template for building **FileMaker Web Viewer apps**
 using **Vue 3**, **Vite**, and **TailwindCSS**.
 
-The app is designed to build into a **single self-contained HTML file**
-(inline JS + CSS) that can be stored in a FileMaker record and loaded via a Web Viewer.
+The current app is now optimized for **hosted deployment** while still supporting FileMaker bridge workflows.
 
 ---
 
@@ -39,7 +40,7 @@ The app is designed to build into a **single self-contained HTML file**
 
 - Simple, predictable structure
 - Clean separation between FileMaker and JavaScript
-- No runtime dependencies or CDN requirements
+- No runtime CDN requirements
 - Easy browser-based development
 - Reliable behavior inside FileMaker Web Viewers
 
@@ -68,22 +69,19 @@ When running in a browser **without FileMaker**, the app:
 
 ---
 
-#### Build for FileMaker (production)
+#### Build for hosted deployment (production)
 
 ```bash
 npm run build
 ```
 
-Output:
+Output directory:
 
 ```
-dist/index.html
+dist/
 ```
 
-This file contains **all JS and CSS inlined** and is suitable for:
-
-- storing in a FileMaker field
-- loading directly into a Web Viewer
+Vite outputs compiled assets suitable for static hosting and server deployment.
 
 ---
 
@@ -96,6 +94,7 @@ src/
 ├─ model.js       # Shared reactive data model
 ├─ fm.js          # FileMaker bridge (all integration logic)
 ├─ devModel.json  # Browser-only development data
+├─ templates/     # Template-specific report components (StaffReport, PublicNotice, ...)
 └─ assets/
    └─ main.css    # Tailwind entry (@import 'tailwindcss')
 ```
@@ -190,6 +189,7 @@ import { model } from '@/model'
 
 - Used only when running in a web browser **without FileMaker**
 - Allows UI development without a FileMaker file open
+- Supports named payloads with `_selectPayload` for template switching in dev
 - Never loaded in production builds
 
 ---
@@ -215,7 +215,7 @@ import { model } from '@/model'
 - JavaScript only (no TypeScript)
 - Vue 3 Composition API
 - TailwindCSS v4
-- Single-file output via `vite-plugin-singlefile`
+- Hosted build output via standard Vite asset pipeline
 
 For AI-assisted development guidance and project-specific conventions,
 see `.github/copilot-instructions.md`.

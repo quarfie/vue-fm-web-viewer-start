@@ -10,9 +10,10 @@ Use this section to capture app-specific rules before coding starts.
 - Business goal: Render editable bilingual planning reports in a FileMaker Web Viewer, persist report JSON back to FileMaker, and hand rendered HTML back for PDF generation.
 - UX scope: Draft reports are editable; finalized reports are read-only. Image selection, markdown editing, signatures, exhibits, and print/export markup are in scope.
 - FileMaker scripts: `JS Save Report JSON`, `JS-FM Get Images List`, `JS Sign Document`, `Receive Report HTML`. Legacy source did not reveal a reliable ready/load script, so the converted app currently boots without one and expects direct `setup(json)` or later wiring.
-- Setup payload contract: include `status`, `language`, `bilingual`, `type`, `fields`, `signatures`; may also include `id_Project`, `attachments`, `property`, `svgHeader`, `svgFooter`, `to`, `images`, `exhibits`, and `pageSize`.
+- Setup payload contract (schema v2): root keys `schemaVersion`, `meta`, `template`, `content`, optional `runtime`. Use `template.name` to select the template component (e.g. `StaffReport`); keep option switches under `template.options` (e.g. `template.options.type = 'prac'`).
+- Local dev payloads: `src/devModel.json` supports multi-payload wrappers using `_selectPayload` and named payload objects; browser dev should load the selected key, not the wrapper itself.
 - Naming conventions: FileMaker callbacks exposed to `window` should remain explicit and stable. Report field keys should stay aligned with FileMaker JSON keys.
-- Guardrails: Keep report layout print-safe on Letter/Legal pages, avoid direct `window.FileMaker` calls in components, preserve single-file build compatibility, and do not enable edits once status is `final`.
+- Guardrails: Keep report layout print-safe on Letter/Legal pages, avoid direct `window.FileMaker` calls in components, preserve hosted-build compatibility, and do not enable edits once status is `final`.
 
 ### New App Checklist
 
@@ -24,9 +25,9 @@ Use this section to capture app-specific rules before coding starts.
 
 ## vue-fm-web-viewer-start
 
-This project is a starter template for building FileMaker Web Viewer apps with Vue 3, Vite, and TailwindCSS.
+This project started as a starter template for FileMaker Web Viewer apps with Vue 3, Vite, and TailwindCSS.
 
-The production build outputs one self-contained `index.html` (inline JS + CSS), suitable for storing in a FileMaker record and loading in a Web Viewer.
+The current production build outputs standard Vite assets in `dist/`, suitable for hosted deployment.
 
 ### Core Goals
 
@@ -41,9 +42,8 @@ The production build outputs one self-contained `index.html` (inline JS + CSS), 
 - Vue 3 + Vite
 - TailwindCSS v4 via `@tailwindcss/vite`
 - `unplugin-icons` (preferred set: `material-symbols`)
-- `vite-plugin-singlefile` enabled only in production mode
 - `npm run dev` for browser/FileMaker development
-- `npm run build` outputs a single-file app (`dist/index.html`)
+- `npm run build` outputs hosted assets in `dist/`
 
 ### Project Structure
 
@@ -68,6 +68,10 @@ The production build outputs one self-contained `index.html` (inline JS + CSS), 
   - Root UI component
   - Reads from `model`
   - May register `onSetup()` and expose additional callbacks when needed
+
+- `src/templates/*`
+  - Template-specific components selected by `template.name`
+  - Keep template-specific display logic and subtype rules here
 
 ### FileMaker Bridge API (`src/fm.js`)
 
@@ -127,7 +131,7 @@ The production build outputs one self-contained `index.html` (inline JS + CSS), 
 - Components should not call `window.FileMaker` directly
 - Use `@` alias for imports from `src`
 - Prefer explicit, readable code over abstractions
-- Avoid lazy-loaded imports (single-file output target)
+- Avoid unnecessary lazy-loaded imports unless there is a clear performance need
 - Avoid dynamic Tailwind class generation unless safelisted
 - Use `unplugin-icons` for all icons (prefer `material-symbols` set)
 - Use `i-material-symbols-*` component tags (kebab-case) for icons
@@ -138,19 +142,3 @@ The production build outputs one self-contained `index.html` (inline JS + CSS), 
 import { fmPerform, onSetup } from '@/fm'
 import { model } from '@/model'
 ```
-
-### FMVue Migration Notes
-
-Use this section only when migrating an existing FMVue app.
-
-- Replace direct `FileMaker.PerformScript(...)` calls with `fmPerform(scriptName, param)`
-- Do not carry over FMVue payload conventions that embed script names in JSON payloads
-- If older code stringified params manually, remove that when switching to `fmPerform()`
-- Move “viewer ready” script call from component `mounted()` into `fmBootstrap({ loadScript })` in `main.js`
-- Replace custom `setup()` plumbing with built-in `setup()` in `fm.js`
-- Move any post-setup logic into `onSetup(() => { ... })`
-- Some FMVue apps did not use setup(), and instead merged incoming data directly into the source code at "[[data_model]]". In that case, refactor to use `setup()`.
-- Remove old `OnFMReady` CDN dependency; equivalent behavior is now in `fm.js`
-- Migrate existing icons to `material-symbols` via `unplugin-icons`
-- Any other CDN dependencies should be replaced with NPM packages where possible
-- Inline CSS color workarounds should no longer be necessary for icons; Tailwind classes should work

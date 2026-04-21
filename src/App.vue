@@ -1,21 +1,17 @@
 <script setup>
-import { computed, onMounted, ref, toRaw, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import BodySections from '@/components/BodySections.vue'
-import ExhibitsList from '@/components/ExhibitsList.vue'
-import LibraryImage from '@/components/LibraryImage.vue'
-import MarkdownBilingual from '@/components/MarkdownBilingual.vue'
-import ReportSignature from '@/components/ReportSignature.vue'
-import SmallFieldTwoColumn from '@/components/SmallFieldTwoColumn.vue'
-import { exhibitTypes, getReportType } from '@/constants'
+import PublicNoticeReport from '@/templates/PublicNoticeReport.vue'
+import StaffReport from '@/templates/StaffReport.vue'
 import { exposeToFileMaker, fmPerform, onSetup } from '@/fm'
 import { model } from '@/model'
+import { sanitizeForPersist } from '@/payloadUtils'
 import defaultHeaderSvg from '@/assets/svgHeader.svg?raw'
 import defaultFooterSvg from '@/assets/svgFooter.svg?raw'
 
 const activeEditorCount = ref(0)
 const imageLibrary = ref([])
-const selectedExhibit = ref('')
+const suppressAutoSave = ref(true)
 
 const DEFAULT_LEGEND_COLOR = '#fdba74'
 const LOCALIZED_FIELD_KEYS = [
@@ -38,20 +34,61 @@ const STRING_FIELD_KEYS = ['fileNumber', 'applicant', 'landowner', 'pid', 'munic
 const isFinal = computed(() => model.meta.status === 'final')
 const currentLanguage = computed(() => model.meta.language ?? 'en')
 const bilingual = computed(() => Boolean(model.meta.bilingual))
-const currentReportType = computed(() => getReportType(model.template.options.type))
+const activeTemplateName = computed(() => {
+  const name = model.template?.name
+  return typeof name === 'string' ? name.trim() : ''
+})
+const isTemplateLoading = computed(() => !activeTemplateName.value)
+const isUnknownTemplate = computed(() => {
+  return Boolean(activeTemplateName.value) && !['StaffReport', 'PublicNotice'].includes(activeTemplateName.value)
+})
 const headerSvgMarkup = computed(() => defaultHeaderSvg)
 const footerSvgMarkup = computed(() => defaultFooterSvg)
 const attachmentsJson = computed(() => JSON.stringify(model.content.attachments ?? []))
+const fileNumberForFilename = computed(() => {
+  const value = model.content?.fields?.fileNumber
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (value && typeof value === 'object') {
+    if (typeof value.bi === 'string') {
+      return value.bi
+    }
+
+    if (typeof value.en === 'string') {
+      return value.en
+    }
+  }
+
+  return ''
+})
+const meetingDateForFilename = computed(() => {
+  const meetingDate = model.content?.fields?.meetingDate
+  if (meetingDate && typeof meetingDate === 'object') {
+    if (typeof meetingDate.en === 'string' && meetingDate.en.trim()) {
+      return ` ${meetingDate.en}`
+    }
+
+    const year = Number(meetingDate?.year)
+    const month = Number(meetingDate?.month)
+    const day = Number(meetingDate?.day)
+    if (year && month && day) {
+      return ` ${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    }
+  }
+
+  if (typeof meetingDate === 'string' && meetingDate.trim()) {
+    return ` ${meetingDate}`
+  }
+
+  return ''
+})
 const statusLabel = computed(() => {
   const value = model.meta.status ?? 'draft'
   return value.charAt(0).toUpperCase() + value.slice(1)
 })
 
-function chooseTranslation(en, fr, delimiter = '') {
-  const primary = currentLanguage.value === 'en' ? en : fr
-  const secondary = currentLanguage.value === 'en' ? fr : en
-  return `${primary}${bilingual.value ? delimiter : ''}${bilingual.value ? secondary : ''}`
-}
 
 function handleEditingChange(isEditing) {
   activeEditorCount.value = Math.max(0, activeEditorCount.value + (isEditing ? 1 : -1))
@@ -84,12 +121,7 @@ function toNeutralString(value) {
   return ''
 }
 
-function normalizeModelData() {
-  model.schemaVersion = Number.isFinite(Number(model.schemaVersion)) ? Number(model.schemaVersion) : 2
-  model.meta.status = model.meta.status ?? 'draft'
-  model.meta.language = model.meta.language ?? 'en'
-  model.meta.bilingual = Boolean(model.meta.bilingual)
-  model.meta.pageSize = model.meta.pageSize ?? 'Letter'
+function normalizeStaffReportTemplate() {
   model.template.options.type = model.template.options.type ?? 'prac'
   model.template.options.property = model.template.options.property !== false
 
@@ -101,24 +133,10 @@ function normalizeModelData() {
     model.content.fields[key] = toNeutralString(model.content.fields[key])
   }
 
-  model.content.detail = Array.isArray(model.content.detail)
-    ? model.content.detail.map((section) => ({
-        name: toLocalizedText(section?.name),
-        value: toLocalizedText(section?.value),
-      }))
-    : []
-
-  model.content.exhibits = Array.isArray(model.content.exhibits)
-    ? model.content.exhibits.map((exhibit) => ({
-        ...exhibit,
-        title: toLocalizedText(exhibit?.title),
-        description: toLocalizedText(exhibit?.description),
-        images: exhibit?.images && typeof exhibit.images === 'object' ? exhibit.images : {},
-      }))
-    : []
-
-  model.content.signatures = Array.isArray(model.content.signatures) ? model.content.signatures : []
-  model.content.attachments = Array.isArray(model.content.attachments) ? model.content.attachments : []
+  model.content.detail = model.content.detail.map((section) => ({
+    name: toLocalizedText(section?.name),
+    value: toLocalizedText(section?.value),
+  }))
 
   const propertyLocation = model.content.images?.propertyLocation
   const oldStyleImage = propertyLocation && typeof propertyLocation === 'object' && 'url' in propertyLocation
@@ -143,6 +161,104 @@ function normalizeModelData() {
   }
 }
 
+function normalizePublicNoticeTemplate() {
+  model.content.fields.subject = toLocalizedText(model.content.fields.subject)
+  model.content.fields.description = toLocalizedText(model.content.fields.description)
+  model.content.fields.location = toLocalizedText(model.content.fields.location)
+  model.content.fields.fileNumber = model.content.fields.fileNumber && typeof model.content.fields.fileNumber === 'object'
+    ? { bi: model.content.fields.fileNumber.bi ?? '' }
+    : { bi: typeof model.content.fields.fileNumber === 'string' ? model.content.fields.fileNumber : '' }
+  model.content.fields.pid = model.content.fields.pid && typeof model.content.fields.pid === 'object'
+    ? { bi: model.content.fields.pid.bi ?? '' }
+    : { bi: typeof model.content.fields.pid === 'string' ? model.content.fields.pid : '' }
+  model.content.fields.date = model.content.fields.date && typeof model.content.fields.date === 'object'
+    ? {
+        day: Number(model.content.fields.date.day) || 0,
+        month: Number(model.content.fields.date.month) || 0,
+        year: Number(model.content.fields.date.year) || 0,
+      }
+    : { day: 0, month: 0, year: 0 }
+  model.content.fields.meetingDate = model.content.fields.meetingDate && typeof model.content.fields.meetingDate === 'object'
+    ? {
+        day: Number(model.content.fields.meetingDate.day) || 0,
+        month: Number(model.content.fields.meetingDate.month) || 0,
+        year: Number(model.content.fields.meetingDate.year) || 0,
+      }
+    : { day: 0, month: 0, year: 0 }
+
+  const municipality = model.content.data.municipality && typeof model.content.data.municipality === 'object'
+    ? model.content.data.municipality
+    : {}
+  const reviewCommittee = municipality.reviewCommittee && typeof municipality.reviewCommittee === 'object'
+    ? municipality.reviewCommittee
+    : {}
+  const meeting = reviewCommittee.meeting && typeof reviewCommittee.meeting === 'object'
+    ? reviewCommittee.meeting
+    : {}
+
+  model.content.data = {
+    municipality: {
+      ...municipality,
+      name: toLocalizedText(municipality.name),
+      reviewCommittee: {
+        ...reviewCommittee,
+        name: toLocalizedText(reviewCommittee.name),
+        meeting: {
+          ...meeting,
+          location: toLocalizedText(meeting.location),
+          address: toLocalizedText(meeting.address),
+          noticeUrl: toLocalizedText(meeting.noticeUrl),
+          time: meeting.time && typeof meeting.time === 'object'
+            ? {
+                hour: Number(meeting.time.hour) || 0,
+                minute: Number(meeting.time.minute) || 0,
+              }
+            : { hour: 0, minute: 0 },
+        },
+      },
+    },
+  }
+}
+
+const TEMPLATE_NORMALIZERS = {
+  StaffReport: normalizeStaffReportTemplate,
+  PublicNotice: normalizePublicNoticeTemplate,
+}
+
+function normalizeModelData() {
+  model.schemaVersion = Number.isFinite(Number(model.schemaVersion)) ? Number(model.schemaVersion) : 2
+  model.meta.status = model.meta.status ?? 'draft'
+  model.meta.language = model.meta.language ?? 'en'
+  model.meta.bilingual = Boolean(model.meta.bilingual)
+  model.meta.pageSize = model.meta.pageSize ?? 'Letter'
+  model.template = model.template && typeof model.template === 'object' ? model.template : {}
+  model.template.name = typeof model.template.name === 'string' ? model.template.name.trim() : ''
+  model.template.options = model.template.options && typeof model.template.options === 'object'
+    ? model.template.options
+    : {}
+
+  model.content = model.content && typeof model.content === 'object' ? model.content : {}
+  model.content.fields = model.content.fields && typeof model.content.fields === 'object' ? model.content.fields : {}
+  model.content.detail = Array.isArray(model.content.detail) ? model.content.detail : []
+  model.content.images = model.content.images && typeof model.content.images === 'object' ? model.content.images : {}
+  model.content.signatures = Array.isArray(model.content.signatures) ? model.content.signatures : []
+  model.content.exhibits = Array.isArray(model.content.exhibits) ? model.content.exhibits : []
+  model.content.attachments = Array.isArray(model.content.attachments) ? model.content.attachments : []
+  model.content.data = model.content.data && typeof model.content.data === 'object' ? model.content.data : {}
+
+  model.content.exhibits = model.content.exhibits.map((exhibit) => ({
+    ...exhibit,
+    title: toLocalizedText(exhibit?.title),
+    description: toLocalizedText(exhibit?.description),
+    images: exhibit?.images && typeof exhibit.images === 'object' ? exhibit.images : {},
+  }))
+
+  const normalizeTemplate = TEMPLATE_NORMALIZERS[model.template.name]
+  if (typeof normalizeTemplate === 'function') {
+    normalizeTemplate()
+  }
+}
+
 function updateLegendColor(event) {
   const nextColor = event?.target?.value
   if (typeof nextColor !== 'string' || !nextColor) {
@@ -153,51 +269,10 @@ function updateLegendColor(event) {
   saveToFM()
 }
 
-function sanitizeModelForSave() {
-  const clone = JSON.parse(JSON.stringify(toRaw(model)))
-
-  if (clone.content?.images && typeof clone.content.images === 'object') {
-    for (const imageEntry of Object.values(clone.content.images)) {
-      if (imageEntry && typeof imageEntry === 'object') {
-        delete imageEntry.url
-      }
-
-      if (imageEntry?.image && typeof imageEntry.image === 'object') {
-        delete imageEntry.image.url
-      }
-    }
-  }
-
-  if (Array.isArray(clone.content?.signatures)) {
-    for (const signature of clone.content.signatures) {
-      if (signature?.user && typeof signature.user === 'object') {
-        delete signature.user.signature
-      }
-    }
-  }
-
-  if (Array.isArray(clone.content?.exhibits)) {
-    for (const exhibit of clone.content.exhibits) {
-      if (!exhibit?.images || typeof exhibit.images !== 'object') {
-        continue
-      }
-
-      for (const image of Object.values(exhibit.images)) {
-        if (image && typeof image === 'object') {
-          delete image.url
-        }
-      }
-    }
-  }
-
-  delete clone.runtime
-  return clone
-}
-
 function saveToFM() {
   fmPerform('JS Save Report JSON', {
     script: 'JS Save Report JSON',
-    model: sanitizeModelForSave(),
+    model: sanitizeForPersist(model),
   })
 }
 
@@ -296,14 +371,14 @@ function finalize() {
   saveToFM()
 }
 
-function addExhibit() {
-  if (!selectedExhibit.value) {
+function addExhibit(selectedType) {
+  if (!selectedType) {
     return
   }
 
-  const exhibitTitle = typeof selectedExhibit.value === 'string'
-    ? { en: selectedExhibit.value, fr: selectedExhibit.value }
-    : { ...selectedExhibit.value }
+  const exhibitTitle = typeof selectedType === 'string'
+    ? { en: selectedType, fr: selectedType }
+    : { ...selectedType }
 
   model.content.exhibits.push({
     title: exhibitTitle,
@@ -311,7 +386,6 @@ function addExhibit() {
     images: {},
   })
 
-  selectedExhibit.value = ''
   saveToFM()
 }
 
@@ -404,19 +478,27 @@ function updateExhibitImage(payload) {
 watch(
   () => model.meta.bilingual,
   () => {
+    if (suppressAutoSave.value) {
+      return
+    }
+
     saveToFM()
   },
 )
 
-onSetup(() => {
+onSetup(async () => {
+  suppressAutoSave.value = true
   normalizeModelData()
   getImagesList()
+  await nextTick()
+  suppressAutoSave.value = false
 })
 
 onMounted(() => {
   exposeToFileMaker('getAsHtml', getAsHtml)
   exposeToFileMaker('insertImagesList', insertImagesList)
   exposeToFileMaker('insertSignature', insertSignature)
+  suppressAutoSave.value = true
   normalizeModelData()
   getImagesList()
 })
@@ -464,7 +546,7 @@ onMounted(() => {
     <main class="px-4 pb-10 pt-24">
       <section id="page" class="mx-auto w-full max-w-204 bg-white px-8 py-8 shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
         <span id="filename" class="hidden">
-          {{ model.meta.status === 'final' ? '' : 'DRAFT ' }}{{ currentReportType.name.en }} {{ model.content.fields.fileNumber }}{{ model.content.fields.meetingDate.en ? ` ${model.content.fields.meetingDate.en}` : '' }}
+          {{ model.meta.status === 'final' ? '' : 'DRAFT ' }}{{ model.template.name }} {{ fileNumberForFilename }}{{ meetingDateForFilename }}
         </span>
         <span id="pageSize" class="hidden">{{ model.meta.pageSize || 'Letter' }}</span>
         <span id="attachments" class="hidden">{{ attachmentsJson }}</span>
@@ -476,323 +558,56 @@ onMounted(() => {
           </div>
         </header>
 
-        <div class="mb-5 mt-4 grid gap-4" :class="bilingual ? 'grid-cols-2' : 'grid-cols-1'">
-          <h1 v-if="currentLanguage === 'en'" class="text-2xl font-bold tracking-tight text-slate-900">
-            {{ currentReportType.name.en }}
-          </h1>
-          <h1 v-if="currentLanguage === 'fr' || bilingual" class="text-2xl font-bold tracking-tight text-slate-900">
-            {{ currentReportType.name.fr }}
-          </h1>
-          <h1 v-if="currentLanguage === 'fr' && bilingual" class="text-2xl font-bold tracking-tight text-slate-900">
-            {{ currentReportType.name.en }}
-          </h1>
-        </div>
-
-        <div
-          class="mb-5 grid gap-4 text-sm"
-          :class="bilingual ? 'grid-cols-2' : 'grid-cols-1'"
-          v-html="chooseTranslation(`<h2><strong class='text-[11px] uppercase tracking-[0.12em] text-slate-500'>To:</strong> ${model.content.fields.to.en}</h2>`, `<h2><strong class='text-[11px] uppercase tracking-[0.12em] text-slate-500'>A :</strong> ${model.content.fields.to.fr}</h2>`)"
-        />
-
-        <SmallFieldTwoColumn
-          labelen="Subject"
-          labelfr="Objet"
-          :text="model.content.fields.subject"
-          :language="currentLanguage"
+        <StaffReport
+          v-if="activeTemplateName === 'StaffReport'"
+          :model="model"
+          :current-language="currentLanguage"
           :bilingual="bilingual"
-          :disabled="isFinal"
-          editable
-          @update-field="(payload) => updateFieldValue('subject', payload)"
-          @editing-change="handleEditingChange"
-        />
-        <SmallFieldTwoColumn
-          labelen="Meeting Date"
-          labelfr="Date de la reunion"
-          :text="model.content.fields.meetingDate"
-          :language="currentLanguage"
-          :bilingual="bilingual"
-          :disabled="isFinal"
-          editable
-          @update-field="(payload) => updateFieldValue('meetingDate', payload)"
-          @editing-change="handleEditingChange"
-        />
-        <SmallFieldTwoColumn
-          v-if="model.template.options.type === 'prac'"
-          labelen="Agenda Item"
-          labelfr="Point a l'ordre du jour"
-          :text="model.content.fields.agendaItem"
-          :language="currentLanguage"
-          :bilingual="bilingual"
-          :disabled="isFinal"
-          editable
-          @update-field="(payload) => updateFieldValue('agendaItem', payload)"
-          @editing-change="handleEditingChange"
-        />
-        <SmallFieldTwoColumn
-          labelen="File Number"
-          labelfr="Numero du fichier"
-          :text="model.content.fields.fileNumber"
-          :language="currentLanguage"
-          :bilingual="bilingual"
-          :disabled="isFinal"
-          @update-field="(payload) => updateFieldValue('fileNumber', payload)"
-          @editing-change="handleEditingChange"
-        />
-
-        <div class="my-8 grid grid-cols-2 gap-6 text-sm">
-          <ReportSignature
-            v-for="signature in model.content.signatures"
-            :key="signature.id_Role"
-            :signature="signature"
-            :disabled="isFinal"
-            :choose-translation="chooseTranslation"
-            @remove="removeSignature(signature)"
-            @sign="requestSignature(signature)"
-          />
-        </div>
-
-        <section v-if="model.template.options.property" class="mb-4 grid grid-cols-1 gap-6 text-sm md:grid-cols-2">
-          <div>
-            <h2 class="mb-2 text-lg font-semibold text-slate-900">
-              {{ chooseTranslation('General Information', 'Information generale', ' / ') }}
-            </h2>
-
-            <div class="space-y-4 text-sm">
-              <div>
-                <h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                  {{ chooseTranslation('Applicant', 'Requerant', ' / ') }}
-                </h3>
-                <p>{{ model.content.fields.applicant }}</p>
-              </div>
-              <div>
-                <h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                  {{ chooseTranslation('Landowner', 'Proprietaire', ' / ') }}
-                </h3>
-                <p>{{ model.content.fields.landowner }}</p>
-              </div>
-
-              <MarkdownBilingual
-                labelen="Proposal"
-                labelfr="Demande"
-                :text="model.content.fields.proposal"
-                :language="currentLanguage"
-                :bilingual="bilingual"
-                :disabled="isFinal"
-                stacked
-                @update-field="(payload) => updateFieldValue('proposal', payload)"
-                @editing-change="handleEditingChange"
-              />
-            </div>
-          </div>
-
-          <div class="mr-1 flex h-fit flex-col items-center justify-start border border-black">
-            <div class="flex h-[9cm] w-[9cm] shrink-0 items-center justify-center border-b">
-              <LibraryImage
-                :image="model.content.images.propertyLocation.image"
-                :image-library="imageLibrary"
-                :disabled="isFinal"
-                @save="saveToFM"
-                @update:image="updatePropertyLocationImage"
-              />
-            </div>
-
-            <div id="belowMap" class="m-2 flex items-center gap-4">
-              <div id="captionAndLegend" class="pl-4">
-                <span class="font-bold">Property Location Map</span>
-                <div class="flex items-center justify-center gap-2">
-                  <input
-                    type="color"
-                    :value="model.content.images.propertyLocation.data.legendColor || DEFAULT_LEGEND_COLOR"
-                    :disabled="isFinal"
-                    class="legend-color-chip"
-                    @input="updateLegendColor"
-                  />
-                  <span>Subject Property</span>
-                </div>
-              </div>
-
-              <div id="icon">
-                <svg width="30" height="30" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                  <path
-                    d="M42.066 0v20h3.752V6.957L53.881 20h4.053V0h-3.752v13.355L45.996 0zm5.57 26.688l-25.77 69.949c-.823 2.238 1.658 4.248 3.677 2.978L50 84.195l24.455 15.42c2.02 1.273 4.504-.738 3.68-2.978l-25.79-70c-.472-1.096-1.283-1.632-2.384-1.635c-1.1-.003-2.017.856-2.324 1.686zm-.136 14.83V79.86L29.1 91.463z"
-                    fill="#000"
-                    fill-rule="evenodd"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section v-if="model.template.options.property">
-          <h2 class="mb-2 text-lg font-semibold text-slate-900">
-            {{ chooseTranslation('Site Information', 'Information du site', ' / ') }}
-          </h2>
-
-          <SmallFieldTwoColumn
-            labelen="PID"
-            labelfr="NID"
-            :text="model.content.fields.pid"
-            :language="currentLanguage"
-            :bilingual="bilingual"
-            :disabled="isFinal"
-            @update-field="(payload) => updateFieldValue('pid', payload)"
-            @editing-change="handleEditingChange"
-          />
-          <SmallFieldTwoColumn
-            labelen="Lot Size"
-            labelfr="Grandeur du lot"
-            :text="model.content.fields.lotSize"
-            :language="currentLanguage"
-            :bilingual="bilingual"
-            :disabled="isFinal"
-            editable
-            @update-field="(payload) => updateFieldValue('lotSize', payload)"
-            @editing-change="handleEditingChange"
-          />
-          <SmallFieldTwoColumn
-            labelen="Location"
-            labelfr="Endroit"
-            :text="model.content.fields.location"
-            :language="currentLanguage"
-            :bilingual="bilingual"
-            :disabled="isFinal"
-            editable
-            @update-field="(payload) => updateFieldValue('location', payload)"
-            @editing-change="handleEditingChange"
-          />
-          <SmallFieldTwoColumn
-            labelen="Municipality"
-            labelfr="Municipalite"
-            :text="model.content.fields.municipality"
-            :language="currentLanguage"
-            :bilingual="bilingual"
-            :disabled="isFinal"
-            @update-field="(payload) => updateFieldValue('municipality', payload)"
-            @editing-change="handleEditingChange"
-          />
-          <SmallFieldTwoColumn
-            labelen="Zoning"
-            labelfr="Zonage"
-            :text="model.content.fields.zoning"
-            :language="currentLanguage"
-            :bilingual="bilingual"
-            :disabled="isFinal"
-            editable
-            @update-field="(payload) => updateFieldValue('zoning', payload)"
-            @editing-change="handleEditingChange"
-          />
-          <SmallFieldTwoColumn
-            labelen="Future Land Use Designation"
-            labelfr="Designation de l'utilisation future du sol"
-            :text="model.content.fields.futureUse"
-            :language="currentLanguage"
-            :bilingual="bilingual"
-            :disabled="isFinal"
-            editable
-            @update-field="(payload) => updateFieldValue('futureUse', payload)"
-            @editing-change="handleEditingChange"
-          />
-          <SmallFieldTwoColumn
-            labelen="Current Use"
-            labelfr="Usage present"
-            :text="model.content.fields.currentUse"
-            :language="currentLanguage"
-            :bilingual="bilingual"
-            :disabled="isFinal"
-            editable
-            @update-field="(payload) => updateFieldValue('currentUse', payload)"
-            @editing-change="handleEditingChange"
-          />
-          <SmallFieldTwoColumn
-            labelen="Surrounding Use"
-            labelfr="Usage des environs"
-            :text="model.content.fields.surroundingUse"
-            :language="currentLanguage"
-            :bilingual="bilingual"
-            :disabled="isFinal"
-            editable
-            @update-field="(payload) => updateFieldValue('surroundingUse', payload)"
-            @editing-change="handleEditingChange"
-          />
-          <SmallFieldTwoColumn
-            labelen="Municipal Services"
-            labelfr="Services municipaux"
-            :text="model.content.fields.municipalServices"
-            :language="currentLanguage"
-            :bilingual="bilingual"
-            :disabled="isFinal"
-            editable
-            @update-field="(payload) => updateFieldValue('municipalServices', payload)"
-            @editing-change="handleEditingChange"
-          />
-          <SmallFieldTwoColumn
-            labelen="Access/egress"
-            labelfr="Acces-Sortie"
-            :text="model.content.fields.access"
-            :language="currentLanguage"
-            :bilingual="bilingual"
-            :disabled="isFinal"
-            editable
-            @update-field="(payload) => updateFieldValue('access', payload)"
-            @editing-change="handleEditingChange"
-          />
-        </section>
-
-        <BodySections
-          :sections="model.content.detail"
-          :language="currentLanguage"
-          :bilingual="bilingual"
-          :disabled="isFinal"
-          @update-section-field="updateSectionField"
-          @editing-change="handleEditingChange"
-        />
-
-        <div
-          v-if="bilingual"
-          class="mt-5 flex gap-6 text-xs break-inside-avoid"
-          :class="currentLanguage === 'fr' ? 'flex-row-reverse' : 'flex-row'"
-        >
-          <p class="flex-1">
-            <strong>Note:</strong> This report was written in {{ currentLanguage === 'en' ? 'English' : 'French' }} and translated to {{ currentLanguage === 'en' ? 'French' : 'English' }}. Where a conflict exists between the two languages, the original language shall prevail.
-          </p>
-          <p class="flex-1">
-            <strong>Note:</strong> ce rapport a ete redige en {{ currentLanguage === 'en' ? 'anglais' : 'francais' }} et traduit en {{ currentLanguage === 'en' ? 'francais' : 'anglais' }}. En cas de conflit entre les deux langues, la langue originale prevaudra.
-          </p>
-        </div>
-
-        <ExhibitsList
-          :exhibits="model.content.exhibits"
-          :language="currentLanguage"
-          :bilingual="bilingual"
+          :is-final="isFinal"
           :image-library="imageLibrary"
-          :disabled="isFinal"
+          @update-field-value="updateFieldValue"
+          @update-section-field="updateSectionField"
           @move-exhibit="moveExhibit"
           @remove-exhibit="removeExhibit"
           @update-exhibit-title="updateExhibitTitle"
           @update-exhibit-description="updateExhibitDescription"
           @update-exhibit-image="updateExhibitImage"
+          @save-to-fm="saveToFM"
+          @update-property-location-image="updatePropertyLocationImage"
+          @update-legend-color="updateLegendColor"
+          @remove-signature="removeSignature"
+          @request-signature="requestSignature"
+          @add-exhibit="addExhibit"
           @editing-change="handleEditingChange"
         />
 
-        <div v-if="!isFinal" class="no-print mb-6 mt-6">
-          <h2 class="text-lg font-semibold">Add an exhibit...</h2>
-          <div class="mt-2 flex flex-wrap items-center gap-3">
-            <select
-              v-model="selectedExhibit"
-              class="min-w-56 rounded border border-slate-300 bg-white px-3 py-2"
-            >
-              <option disabled value="">Select...</option>
-              <option v-for="type in exhibitTypes" :key="type.en" :value="type">
-                {{ chooseTranslation(type.en, type.fr, ' / ') }}
-              </option>
-              <option :value="{ en: 'Other', fr: 'Autre' }">{{ chooseTranslation('Other', 'Autre', ' / ') }}</option>
-            </select>
+        <PublicNoticeReport
+          v-else-if="activeTemplateName === 'PublicNotice'"
+          :model="model"
+          :current-language="currentLanguage"
+          :bilingual="bilingual"
+          :is-final="isFinal"
+          :image-library="imageLibrary"
+          @move-exhibit="moveExhibit"
+          @remove-exhibit="removeExhibit"
+          @update-exhibit-title="updateExhibitTitle"
+          @update-exhibit-description="updateExhibitDescription"
+          @update-exhibit-image="updateExhibitImage"
+          @remove-signature="removeSignature"
+          @request-signature="requestSignature"
+          @add-exhibit="addExhibit"
+          @save-to-fm="saveToFM"
+          @editing-change="handleEditingChange"
+        />
 
-            <button type="button" class="rounded bg-slate-700 px-3 py-2 text-sm text-white" @click="addExhibit">
-              Add
-            </button>
-          </div>
+        <div v-else-if="isTemplateLoading" class="py-20 text-center text-slate-600">
+          <div class="spinner mx-auto mb-4" aria-hidden="true" />
+          <p class="text-base font-medium">Loading report template...</p>
+        </div>
+
+        <div v-else-if="isUnknownTemplate" class="py-20 text-center text-slate-700">
+          <p class="text-base font-semibold">Unknown template: {{ activeTemplateName }}</p>
+          <p class="mt-2 text-sm">Check the payload template.name value.</p>
         </div>
 
         <footer class="report-footer" v-html="footerSvgMarkup" />
@@ -809,6 +624,21 @@ onMounted(() => {
   color: #0369a1;
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #cbd5e1;
+  border-top-color: #0284c7;
+  border-radius: 999px;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 #page {

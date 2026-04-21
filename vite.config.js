@@ -3,7 +3,6 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
-import { viteSingleFile } from 'vite-plugin-singlefile'
 import tailwindcss from '@tailwindcss/vite'
 
 import Icons from 'unplugin-icons/vite'
@@ -17,7 +16,6 @@ export default defineConfig((env) => {
       vue(),
       tailwindcss(),
       ...(mode === 'development' ? [vueDevTools()] : []),
-      ...(mode === 'production' ? [viteSingleFile()] : []),
       Components({
         resolvers: [IconsResolver()],
       }),
