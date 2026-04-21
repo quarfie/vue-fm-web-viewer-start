@@ -2,7 +2,7 @@
 import { toRef } from 'vue'
 
 import SmallField from '@/components/SmallField.vue'
-import { useBilingualBiSlots, useBilingualSlots } from '@/composables/useBilingualSlots'
+import { useBilingualSlots } from '@/composables/useBilingualSlots'
 
 const props = defineProps({
   labelen: {
@@ -45,8 +45,11 @@ const sharedArgs = {
   text: toRef(props, 'text'),
 }
 
-const isBi = typeof props.text === 'object' && props.text !== null && 'bi' in props.text
-const slots = isBi ? useBilingualBiSlots(sharedArgs) : useBilingualSlots(sharedArgs)
+const slots = useBilingualSlots(sharedArgs)
+
+function getFieldKey(slotKey) {
+  return typeof props.text === 'string' ? null : slotKey
+}
 </script>
 
 <template>
@@ -62,7 +65,7 @@ const slots = isBi ? useBilingualBiSlots(sharedArgs) : useBilingualSlots(sharedA
       :editable="editable"
       :disabled="disabled"
       @editing-change="(value) => emit('editing-change', value)"
-      @update:text="(value) => emit('update-field', { key: slot.key, value })"
+      @update:text="(value) => emit('update-field', { key: getFieldKey(slot.key), value })"
     />
   </div>
 </template>

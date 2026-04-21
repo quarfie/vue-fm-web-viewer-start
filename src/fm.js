@@ -131,13 +131,13 @@ export function fmBootstrap({ readyScript = null, timeoutMs = 1500 } = {}) {
           const dev = await import('./devModel.json')
           setup(dev.default ?? dev)
         } catch {
-          setup({ error: 'No FileMaker object or devModel.json' })
+          setup({ runtime: { error: 'No FileMaker object or devModel.json' } })
         }
         return
       }
 
       // PROD: FileMaker missing => show error (do not load devModel.json)
-      setup({ error: 'No FileMaker object detected' })
+      setup({ runtime: { error: 'No FileMaker object detected' } })
     },
   })
 }

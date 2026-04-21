@@ -52,47 +52,56 @@ export const reportTypes = [
 
 export function createDefaultModel() {
   return {
-    error: '',
-    status: 'draft',
-    language: 'en',
-    bilingual: false,
-    pageSize: 'Letter',
-    type: 'prac',
-    id_Project: null,
-    attachments: [],
-    property: true,
-    legendColor: '#fdba74',
-    svgHeader: '',
-    svgFooter: '',
-    to: {
-      en: '',
-      fr: '',
+    schemaVersion: 2,
+    meta: {
+      status: 'draft',
+      language: 'en',
+      bilingual: false,
+      pageSize: 'Letter',
     },
-    fields: {
-      subject: { en: '', fr: '' },
-      meetingDate: { en: '', fr: '' },
-      agendaItem: { en: '', fr: '' },
-      fileNumber: { bi: '' },
-      applicant: '',
-      landowner: '',
-      proposal: { en: '', fr: '' },
-      pid: { bi: '' },
-      lotSize: { en: '', fr: '' },
-      location: { en: '', fr: '' },
-      municipality: { bi: '' },
-      zoning: { en: '', fr: '' },
-      futureUse: { en: '', fr: '' },
-      currentUse: { en: '', fr: '' },
-      surroundingUse: { en: '', fr: '' },
-      municipalServices: { en: '', fr: '' },
-      access: { en: '', fr: '' },
+    template: {
+      options: {
+        type: 'prac',
+        property: true,
+      },
+    },
+    content: {
+      attachments: [],
+      fields: {
+        to: { en: '', fr: '' },
+        subject: { en: '', fr: '' },
+        meetingDate: { en: '', fr: '' },
+        agendaItem: { en: '', fr: '' },
+        fileNumber: '',
+        applicant: '',
+        landowner: '',
+        proposal: { en: '', fr: '' },
+        pid: '',
+        lotSize: { en: '', fr: '' },
+        location: { en: '', fr: '' },
+        municipality: '',
+        zoning: { en: '', fr: '' },
+        futureUse: { en: '', fr: '' },
+        currentUse: { en: '', fr: '' },
+        surroundingUse: { en: '', fr: '' },
+        municipalServices: { en: '', fr: '' },
+        access: { en: '', fr: '' },
+      },
       detail: [],
+      images: {
+        propertyLocation: {
+          image: {},
+          data: {
+            legendColor: '#fdba74',
+          },
+        },
+      },
+      signatures: [],
+      exhibits: [],
     },
-    images: {
-      propertyLocation: {},
+    runtime: {
+      error: '',
     },
-    signatures: [],
-    exhibits: [],
   }
 }
 

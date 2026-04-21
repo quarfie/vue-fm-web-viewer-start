@@ -18,34 +18,22 @@ export function useBilingualSlots({ language, bilingual, labelen, labelfr, text 
     const secondary = primary === 'en' ? 'fr' : 'en'
 
     const labelMap = { en: labelen.value, fr: labelfr.value }
-    const valueMap = (key) => (typeof text.value === 'object' && text.value !== null ? text.value[key] ?? '' : '')
+    const valueMap = (key) => {
+      if (typeof text.value === 'string') {
+        return text.value
+      }
+
+      if (typeof text.value === 'object' && text.value !== null) {
+        return text.value[key] ?? ''
+      }
+
+      return ''
+    }
 
     const slots = [{ key: primary, label: labelMap[primary], value: valueMap(primary) }]
 
     if (bilingual.value) {
       slots.push({ key: secondary, label: labelMap[secondary], value: valueMap(secondary) })
-    }
-
-    return slots
-  })
-}
-
-/**
- * Variant for fields stored as `{ bi: string }` (language-neutral single value).
- * Always returns one or two slots pointing at the same `bi` key.
- */
-export function useBilingualBiSlots({ language, bilingual, labelen, labelfr, text }) {
-  return computed(() => {
-    const primary = language.value === 'fr' ? 'fr' : 'en'
-    const secondary = primary === 'en' ? 'fr' : 'en'
-
-    const labelMap = { en: labelen.value, fr: labelfr.value }
-    const value = typeof text.value === 'object' && text.value !== null ? text.value.bi ?? '' : ''
-
-    const slots = [{ key: 'bi', label: labelMap[primary], value }]
-
-    if (bilingual.value) {
-      slots.push({ key: 'bi', label: labelMap[secondary], value })
     }
 
     return slots

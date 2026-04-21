@@ -18,15 +18,32 @@ const imageLibrary = ref([])
 const selectedExhibit = ref('')
 
 const DEFAULT_LEGEND_COLOR = '#fdba74'
+const LOCALIZED_FIELD_KEYS = [
+  'to',
+  'subject',
+  'meetingDate',
+  'agendaItem',
+  'proposal',
+  'lotSize',
+  'location',
+  'zoning',
+  'futureUse',
+  'currentUse',
+  'surroundingUse',
+  'municipalServices',
+  'access',
+]
+const STRING_FIELD_KEYS = ['fileNumber', 'applicant', 'landowner', 'pid', 'municipality']
 
-const isFinal = computed(() => model.status === 'final')
-const currentLanguage = computed(() => model.language ?? 'en')
-const bilingual = computed(() => Boolean(model.bilingual))
-const currentReportType = computed(() => getReportType(model.type))
-const headerSvgMarkup = computed(() => model.svgHeader || defaultHeaderSvg)
-const footerSvgMarkup = computed(() => model.svgFooter || defaultFooterSvg)
+const isFinal = computed(() => model.meta.status === 'final')
+const currentLanguage = computed(() => model.meta.language ?? 'en')
+const bilingual = computed(() => Boolean(model.meta.bilingual))
+const currentReportType = computed(() => getReportType(model.template.options.type))
+const headerSvgMarkup = computed(() => defaultHeaderSvg)
+const footerSvgMarkup = computed(() => defaultFooterSvg)
+const attachmentsJson = computed(() => JSON.stringify(model.content.attachments ?? []))
 const statusLabel = computed(() => {
-  const value = model.status ?? 'draft'
+  const value = model.meta.status ?? 'draft'
   return value.charAt(0).toUpperCase() + value.slice(1)
 })
 
@@ -40,40 +57,90 @@ function handleEditingChange(isEditing) {
   activeEditorCount.value = Math.max(0, activeEditorCount.value + (isEditing ? 1 : -1))
 }
 
-function normalizeModelData() {
-  model.legendColor = typeof model.legendColor === 'string' && model.legendColor.trim()
-    ? model.legendColor
-    : DEFAULT_LEGEND_COLOR
+function toLocalizedText(value) {
+  if (typeof value === 'string') {
+    return { en: value, fr: value }
+  }
 
-  model.fields.detail = Array.isArray(model.fields.detail)
-    ? model.fields.detail.map((section) => ({
-        name: {
-          en: section?.name?.en ?? '',
-          fr: section?.name?.fr ?? '',
-        },
-        value: {
-          en: section?.value?.en ?? '',
-          fr: section?.value?.fr ?? '',
-        },
+  if (value && typeof value === 'object') {
+    return {
+      en: value.en ?? '',
+      fr: value.fr ?? '',
+    }
+  }
+
+  return { en: '', fr: '' }
+}
+
+function toNeutralString(value) {
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (value && typeof value === 'object') {
+    return value.bi ?? ''
+  }
+
+  return ''
+}
+
+function normalizeModelData() {
+  model.schemaVersion = Number.isFinite(Number(model.schemaVersion)) ? Number(model.schemaVersion) : 2
+  model.meta.status = model.meta.status ?? 'draft'
+  model.meta.language = model.meta.language ?? 'en'
+  model.meta.bilingual = Boolean(model.meta.bilingual)
+  model.meta.pageSize = model.meta.pageSize ?? 'Letter'
+  model.template.options.type = model.template.options.type ?? 'prac'
+  model.template.options.property = model.template.options.property !== false
+
+  for (const key of LOCALIZED_FIELD_KEYS) {
+    model.content.fields[key] = toLocalizedText(model.content.fields[key])
+  }
+
+  for (const key of STRING_FIELD_KEYS) {
+    model.content.fields[key] = toNeutralString(model.content.fields[key])
+  }
+
+  model.content.detail = Array.isArray(model.content.detail)
+    ? model.content.detail.map((section) => ({
+        name: toLocalizedText(section?.name),
+        value: toLocalizedText(section?.value),
       }))
     : []
 
-  model.exhibits = Array.isArray(model.exhibits)
-    ? model.exhibits.map((exhibit) => ({
+  model.content.exhibits = Array.isArray(model.content.exhibits)
+    ? model.content.exhibits.map((exhibit) => ({
         ...exhibit,
-        title: {
-          en: exhibit?.title?.en ?? '',
-          fr: exhibit?.title?.fr ?? '',
-        },
-        description: {
-          en: exhibit?.description?.en ?? '',
-          fr: exhibit?.description?.fr ?? '',
-        },
+        title: toLocalizedText(exhibit?.title),
+        description: toLocalizedText(exhibit?.description),
         images: exhibit?.images && typeof exhibit.images === 'object' ? exhibit.images : {},
       }))
     : []
 
-  model.signatures = Array.isArray(model.signatures) ? model.signatures : []
+  model.content.signatures = Array.isArray(model.content.signatures) ? model.content.signatures : []
+  model.content.attachments = Array.isArray(model.content.attachments) ? model.content.attachments : []
+
+  const propertyLocation = model.content.images?.propertyLocation
+  const oldStyleImage = propertyLocation && typeof propertyLocation === 'object' && 'url' in propertyLocation
+
+  const normalizedImage = oldStyleImage
+    ? { ...propertyLocation }
+    : propertyLocation?.image && typeof propertyLocation.image === 'object'
+      ? propertyLocation.image
+      : {}
+
+  const currentLegendColor = propertyLocation?.data?.legendColor
+  const normalizedLegendColor = typeof currentLegendColor === 'string' && currentLegendColor.trim()
+    ? currentLegendColor
+    : DEFAULT_LEGEND_COLOR
+
+  model.content.images.propertyLocation = {
+    image: normalizedImage,
+    data: {
+      ...(propertyLocation?.data ?? {}),
+      legendColor: normalizedLegendColor,
+    },
+  }
 }
 
 function updateLegendColor(event) {
@@ -82,31 +149,35 @@ function updateLegendColor(event) {
     return
   }
 
-  model.legendColor = nextColor
+  model.content.images.propertyLocation.data.legendColor = nextColor
   saveToFM()
 }
 
 function sanitizeModelForSave() {
   const clone = JSON.parse(JSON.stringify(toRaw(model)))
 
-  if (clone.images && typeof clone.images === 'object') {
-    for (const image of Object.values(clone.images)) {
-      if (image && typeof image === 'object') {
-        delete image.url
+  if (clone.content?.images && typeof clone.content.images === 'object') {
+    for (const imageEntry of Object.values(clone.content.images)) {
+      if (imageEntry && typeof imageEntry === 'object') {
+        delete imageEntry.url
+      }
+
+      if (imageEntry?.image && typeof imageEntry.image === 'object') {
+        delete imageEntry.image.url
       }
     }
   }
 
-  if (Array.isArray(clone.signatures)) {
-    for (const signature of clone.signatures) {
+  if (Array.isArray(clone.content?.signatures)) {
+    for (const signature of clone.content.signatures) {
       if (signature?.user && typeof signature.user === 'object') {
         delete signature.user.signature
       }
     }
   }
 
-  if (Array.isArray(clone.exhibits)) {
-    for (const exhibit of clone.exhibits) {
+  if (Array.isArray(clone.content?.exhibits)) {
+    for (const exhibit of clone.content.exhibits) {
       if (!exhibit?.images || typeof exhibit.images !== 'object') {
         continue
       }
@@ -119,7 +190,7 @@ function sanitizeModelForSave() {
     }
   }
 
-  clone.attachments = []
+  delete clone.runtime
   return clone
 }
 
@@ -131,25 +202,19 @@ function saveToFM() {
 }
 
 function setLanguage(language) {
-  model.language = language
+  model.meta.language = language
   saveToFM()
 }
 
 function togglePageSize() {
-  model.pageSize = model.pageSize === 'Legal' ? 'Letter' : 'Legal'
+  model.meta.pageSize = model.meta.pageSize === 'Legal' ? 'Letter' : 'Legal'
   saveToFM()
 }
 
 function getImagesList() {
-  if (!model.id_Project) {
-    imageLibrary.value = []
-    return
-  }
-
   fmPerform('JS-FM Get Images List', {
     script: 'JS-FM Return Images List',
     callback: 'insertImagesList',
-    id_Project: model.id_Project,
   })
 }
 
@@ -173,7 +238,7 @@ function insertSignature(idRole, user) {
     }
   }
 
-  const signature = model.signatures.find((entry) => entry.id_Role === idRole)
+  const signature = model.content.signatures.find((entry) => entry.id_Role === idRole)
 
   if (!signature) {
     return
@@ -222,12 +287,12 @@ function finalize() {
     return
   }
 
-  if (model.signatures.some((signature) => !signature.user || typeof signature.user !== 'object')) {
+  if (model.content.signatures.some((signature) => !signature.user || typeof signature.user !== 'object')) {
     window.alert('The document must be signed first.')
     return
   }
 
-  model.status = 'final'
+  model.meta.status = 'final'
   saveToFM()
 }
 
@@ -240,7 +305,7 @@ function addExhibit() {
     ? { en: selectedExhibit.value, fr: selectedExhibit.value }
     : { ...selectedExhibit.value }
 
-  model.exhibits.push({
+  model.content.exhibits.push({
     title: exhibitTitle,
     description: { en: '', fr: '' },
     images: {},
@@ -251,12 +316,23 @@ function addExhibit() {
 }
 
 function updatePropertyLocationImage(value) {
-  model.images.propertyLocation = value
+  model.content.images.propertyLocation.image = value
   saveToFM()
 }
 
-function updateFieldValue(field, payload) {
-  if (!field || typeof field !== 'object' || !payload?.key) {
+function updateFieldValue(fieldKey, payload) {
+  const field = model.content.fields[fieldKey]
+  if (field === undefined) {
+    return
+  }
+
+  if (typeof field === 'string') {
+    model.content.fields[fieldKey] = payload?.value ?? ''
+    saveToFM()
+    return
+  }
+
+  if (!payload?.key || !field || typeof field !== 'object') {
     return
   }
 
@@ -265,7 +341,7 @@ function updateFieldValue(field, payload) {
 }
 
 function updateSectionField(payload) {
-  const section = model.fields.detail[payload.index]
+  const section = model.content.detail[payload.index]
   if (!section?.value) {
     return
   }
@@ -276,23 +352,23 @@ function updateSectionField(payload) {
 
 function moveExhibit(payload) {
   const target = payload.index + payload.direction
-  if (target < 0 || target >= model.exhibits.length) {
+  if (target < 0 || target >= model.content.exhibits.length) {
     return
   }
 
-  const current = model.exhibits[payload.index]
-  model.exhibits[payload.index] = model.exhibits[target]
-  model.exhibits[target] = current
+  const current = model.content.exhibits[payload.index]
+  model.content.exhibits[payload.index] = model.content.exhibits[target]
+  model.content.exhibits[target] = current
   saveToFM()
 }
 
 function removeExhibit(payload) {
-  model.exhibits.splice(payload.index, 1)
+  model.content.exhibits.splice(payload.index, 1)
   saveToFM()
 }
 
 function updateExhibitTitle(payload) {
-  const exhibit = model.exhibits[payload.index]
+  const exhibit = model.content.exhibits[payload.index]
   if (!exhibit?.title) {
     return
   }
@@ -302,7 +378,7 @@ function updateExhibitTitle(payload) {
 }
 
 function updateExhibitDescription(payload) {
-  const exhibit = model.exhibits[payload.index]
+  const exhibit = model.content.exhibits[payload.index]
   if (!exhibit?.description) {
     return
   }
@@ -312,7 +388,7 @@ function updateExhibitDescription(payload) {
 }
 
 function updateExhibitImage(payload) {
-  const exhibit = model.exhibits[payload.index]
+  const exhibit = model.content.exhibits[payload.index]
   if (!exhibit) {
     return
   }
@@ -326,7 +402,7 @@ function updateExhibitImage(payload) {
 }
 
 watch(
-  () => model.bilingual,
+  () => model.meta.bilingual,
   () => {
     saveToFM()
   },
@@ -374,13 +450,13 @@ onMounted(() => {
         </div>
 
         <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-          <input v-model="model.bilingual" type="checkbox" class="rounded border-slate-300">
+          <input v-model="model.meta.bilingual" type="checkbox" class="rounded border-slate-300">
           Bilingual
         </label>
       </template>
 
       <button type="button" class="toolbar-button" @click="getAsHtml">Save PDF</button>
-      <button type="button" class="toolbar-button" @click="togglePageSize">{{ model.pageSize || 'Letter' }}</button>
+      <button type="button" class="toolbar-button" @click="togglePageSize">{{ model.meta.pageSize || 'Letter' }}</button>
       <button v-if="!isFinal" type="button" class="toolbar-button" @click="finalize">Finalize</button>
       <span class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">{{ statusLabel }}</span>
     </div>
@@ -388,10 +464,10 @@ onMounted(() => {
     <main class="px-4 pb-10 pt-24">
       <section id="page" class="mx-auto w-full max-w-204 bg-white px-8 py-8 shadow-[0_18px_40px_rgba(15,23,42,0.16)]">
         <span id="filename" class="hidden">
-          {{ model.status === 'final' ? '' : 'DRAFT ' }}{{ currentReportType.name.en }} {{ model.fields.fileNumber.bi }}{{ model.fields.meetingDate.en ? ` ${model.fields.meetingDate.en}` : '' }}
+          {{ model.meta.status === 'final' ? '' : 'DRAFT ' }}{{ currentReportType.name.en }} {{ model.content.fields.fileNumber }}{{ model.content.fields.meetingDate.en ? ` ${model.content.fields.meetingDate.en}` : '' }}
         </span>
-        <span id="pageSize" class="hidden">{{ model.pageSize || 'Letter' }}</span>
-        <span id="attachments" class="hidden">{{ model.attachments }}</span>
+        <span id="pageSize" class="hidden">{{ model.meta.pageSize || 'Letter' }}</span>
+        <span id="attachments" class="hidden">{{ attachmentsJson }}</span>
 
         <header class="report-header">
           <div class="w-120" v-html="headerSvgMarkup" />
@@ -415,57 +491,57 @@ onMounted(() => {
         <div
           class="mb-5 grid gap-4 text-sm"
           :class="bilingual ? 'grid-cols-2' : 'grid-cols-1'"
-          v-html="chooseTranslation(`<h2><strong class='text-[11px] uppercase tracking-[0.12em] text-slate-500'>To:</strong> ${model.to.en}</h2>`, `<h2><strong class='text-[11px] uppercase tracking-[0.12em] text-slate-500'>A :</strong> ${model.to.fr}</h2>`)"
+          v-html="chooseTranslation(`<h2><strong class='text-[11px] uppercase tracking-[0.12em] text-slate-500'>To:</strong> ${model.content.fields.to.en}</h2>`, `<h2><strong class='text-[11px] uppercase tracking-[0.12em] text-slate-500'>A :</strong> ${model.content.fields.to.fr}</h2>`)"
         />
 
         <SmallFieldTwoColumn
           labelen="Subject"
           labelfr="Objet"
-          :text="model.fields.subject"
+          :text="model.content.fields.subject"
           :language="currentLanguage"
           :bilingual="bilingual"
           :disabled="isFinal"
           editable
-          @update-field="(payload) => updateFieldValue(model.fields.subject, payload)"
+          @update-field="(payload) => updateFieldValue('subject', payload)"
           @editing-change="handleEditingChange"
         />
         <SmallFieldTwoColumn
           labelen="Meeting Date"
           labelfr="Date de la reunion"
-          :text="model.fields.meetingDate"
+          :text="model.content.fields.meetingDate"
           :language="currentLanguage"
           :bilingual="bilingual"
           :disabled="isFinal"
           editable
-          @update-field="(payload) => updateFieldValue(model.fields.meetingDate, payload)"
+          @update-field="(payload) => updateFieldValue('meetingDate', payload)"
           @editing-change="handleEditingChange"
         />
         <SmallFieldTwoColumn
-          v-if="model.type === 'prac'"
+          v-if="model.template.options.type === 'prac'"
           labelen="Agenda Item"
           labelfr="Point a l'ordre du jour"
-          :text="model.fields.agendaItem"
+          :text="model.content.fields.agendaItem"
           :language="currentLanguage"
           :bilingual="bilingual"
           :disabled="isFinal"
           editable
-          @update-field="(payload) => updateFieldValue(model.fields.agendaItem, payload)"
+          @update-field="(payload) => updateFieldValue('agendaItem', payload)"
           @editing-change="handleEditingChange"
         />
         <SmallFieldTwoColumn
           labelen="File Number"
           labelfr="Numero du fichier"
-          :text="model.fields.fileNumber"
+          :text="model.content.fields.fileNumber"
           :language="currentLanguage"
           :bilingual="bilingual"
           :disabled="isFinal"
-          @update-field="(payload) => updateFieldValue(model.fields.fileNumber, payload)"
+          @update-field="(payload) => updateFieldValue('fileNumber', payload)"
           @editing-change="handleEditingChange"
         />
 
         <div class="my-8 grid grid-cols-2 gap-6 text-sm">
           <ReportSignature
-            v-for="signature in model.signatures"
+            v-for="signature in model.content.signatures"
             :key="signature.id_Role"
             :signature="signature"
             :disabled="isFinal"
@@ -475,7 +551,7 @@ onMounted(() => {
           />
         </div>
 
-        <section v-if="model.property" class="mb-4 grid grid-cols-1 gap-6 text-sm md:grid-cols-2">
+        <section v-if="model.template.options.property" class="mb-4 grid grid-cols-1 gap-6 text-sm md:grid-cols-2">
           <div>
             <h2 class="mb-2 text-lg font-semibold text-slate-900">
               {{ chooseTranslation('General Information', 'Information generale', ' / ') }}
@@ -486,24 +562,24 @@ onMounted(() => {
                 <h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                   {{ chooseTranslation('Applicant', 'Requerant', ' / ') }}
                 </h3>
-                <p>{{ model.fields.applicant }}</p>
+                <p>{{ model.content.fields.applicant }}</p>
               </div>
               <div>
                 <h3 class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                   {{ chooseTranslation('Landowner', 'Proprietaire', ' / ') }}
                 </h3>
-                <p>{{ model.fields.landowner }}</p>
+                <p>{{ model.content.fields.landowner }}</p>
               </div>
 
               <MarkdownBilingual
                 labelen="Proposal"
                 labelfr="Demande"
-                :text="model.fields.proposal"
+                :text="model.content.fields.proposal"
                 :language="currentLanguage"
                 :bilingual="bilingual"
                 :disabled="isFinal"
                 stacked
-                @update-field="(payload) => updateFieldValue(model.fields.proposal, payload)"
+                @update-field="(payload) => updateFieldValue('proposal', payload)"
                 @editing-change="handleEditingChange"
               />
             </div>
@@ -512,7 +588,7 @@ onMounted(() => {
           <div class="mr-1 flex h-fit flex-col items-center justify-start border border-black">
             <div class="flex h-[9cm] w-[9cm] shrink-0 items-center justify-center border-b">
               <LibraryImage
-                :image="model.images.propertyLocation"
+                :image="model.content.images.propertyLocation.image"
                 :image-library="imageLibrary"
                 :disabled="isFinal"
                 @save="saveToFM"
@@ -526,7 +602,7 @@ onMounted(() => {
                 <div class="flex items-center justify-center gap-2">
                   <input
                     type="color"
-                    :value="model.legendColor || DEFAULT_LEGEND_COLOR"
+                    :value="model.content.images.propertyLocation.data.legendColor || DEFAULT_LEGEND_COLOR"
                     :disabled="isFinal"
                     class="legend-color-chip"
                     @input="updateLegendColor"
@@ -548,7 +624,7 @@ onMounted(() => {
           </div>
         </section>
 
-        <section v-if="model.property">
+        <section v-if="model.template.options.property">
           <h2 class="mb-2 text-lg font-semibold text-slate-900">
             {{ chooseTranslation('Site Information', 'Information du site', ' / ') }}
           </h2>
@@ -556,115 +632,115 @@ onMounted(() => {
           <SmallFieldTwoColumn
             labelen="PID"
             labelfr="NID"
-            :text="model.fields.pid"
+            :text="model.content.fields.pid"
             :language="currentLanguage"
             :bilingual="bilingual"
             :disabled="isFinal"
-            @update-field="(payload) => updateFieldValue(model.fields.pid, payload)"
+            @update-field="(payload) => updateFieldValue('pid', payload)"
             @editing-change="handleEditingChange"
           />
           <SmallFieldTwoColumn
             labelen="Lot Size"
             labelfr="Grandeur du lot"
-            :text="model.fields.lotSize"
+            :text="model.content.fields.lotSize"
             :language="currentLanguage"
             :bilingual="bilingual"
             :disabled="isFinal"
             editable
-            @update-field="(payload) => updateFieldValue(model.fields.lotSize, payload)"
+            @update-field="(payload) => updateFieldValue('lotSize', payload)"
             @editing-change="handleEditingChange"
           />
           <SmallFieldTwoColumn
             labelen="Location"
             labelfr="Endroit"
-            :text="model.fields.location"
+            :text="model.content.fields.location"
             :language="currentLanguage"
             :bilingual="bilingual"
             :disabled="isFinal"
             editable
-            @update-field="(payload) => updateFieldValue(model.fields.location, payload)"
+            @update-field="(payload) => updateFieldValue('location', payload)"
             @editing-change="handleEditingChange"
           />
           <SmallFieldTwoColumn
             labelen="Municipality"
             labelfr="Municipalite"
-            :text="model.fields.municipality"
+            :text="model.content.fields.municipality"
             :language="currentLanguage"
             :bilingual="bilingual"
             :disabled="isFinal"
-            @update-field="(payload) => updateFieldValue(model.fields.municipality, payload)"
+            @update-field="(payload) => updateFieldValue('municipality', payload)"
             @editing-change="handleEditingChange"
           />
           <SmallFieldTwoColumn
             labelen="Zoning"
             labelfr="Zonage"
-            :text="model.fields.zoning"
+            :text="model.content.fields.zoning"
             :language="currentLanguage"
             :bilingual="bilingual"
             :disabled="isFinal"
             editable
-            @update-field="(payload) => updateFieldValue(model.fields.zoning, payload)"
+            @update-field="(payload) => updateFieldValue('zoning', payload)"
             @editing-change="handleEditingChange"
           />
           <SmallFieldTwoColumn
             labelen="Future Land Use Designation"
             labelfr="Designation de l'utilisation future du sol"
-            :text="model.fields.futureUse"
+            :text="model.content.fields.futureUse"
             :language="currentLanguage"
             :bilingual="bilingual"
             :disabled="isFinal"
             editable
-            @update-field="(payload) => updateFieldValue(model.fields.futureUse, payload)"
+            @update-field="(payload) => updateFieldValue('futureUse', payload)"
             @editing-change="handleEditingChange"
           />
           <SmallFieldTwoColumn
             labelen="Current Use"
             labelfr="Usage present"
-            :text="model.fields.currentUse"
+            :text="model.content.fields.currentUse"
             :language="currentLanguage"
             :bilingual="bilingual"
             :disabled="isFinal"
             editable
-            @update-field="(payload) => updateFieldValue(model.fields.currentUse, payload)"
+            @update-field="(payload) => updateFieldValue('currentUse', payload)"
             @editing-change="handleEditingChange"
           />
           <SmallFieldTwoColumn
             labelen="Surrounding Use"
             labelfr="Usage des environs"
-            :text="model.fields.surroundingUse"
+            :text="model.content.fields.surroundingUse"
             :language="currentLanguage"
             :bilingual="bilingual"
             :disabled="isFinal"
             editable
-            @update-field="(payload) => updateFieldValue(model.fields.surroundingUse, payload)"
+            @update-field="(payload) => updateFieldValue('surroundingUse', payload)"
             @editing-change="handleEditingChange"
           />
           <SmallFieldTwoColumn
             labelen="Municipal Services"
             labelfr="Services municipaux"
-            :text="model.fields.municipalServices"
+            :text="model.content.fields.municipalServices"
             :language="currentLanguage"
             :bilingual="bilingual"
             :disabled="isFinal"
             editable
-            @update-field="(payload) => updateFieldValue(model.fields.municipalServices, payload)"
+            @update-field="(payload) => updateFieldValue('municipalServices', payload)"
             @editing-change="handleEditingChange"
           />
           <SmallFieldTwoColumn
             labelen="Access/egress"
             labelfr="Acces-Sortie"
-            :text="model.fields.access"
+            :text="model.content.fields.access"
             :language="currentLanguage"
             :bilingual="bilingual"
             :disabled="isFinal"
             editable
-            @update-field="(payload) => updateFieldValue(model.fields.access, payload)"
+            @update-field="(payload) => updateFieldValue('access', payload)"
             @editing-change="handleEditingChange"
           />
         </section>
 
         <BodySections
-          :sections="model.fields.detail"
+          :sections="model.content.detail"
           :language="currentLanguage"
           :bilingual="bilingual"
           :disabled="isFinal"
@@ -686,7 +762,7 @@ onMounted(() => {
         </div>
 
         <ExhibitsList
-          :exhibits="model.exhibits"
+          :exhibits="model.content.exhibits"
           :language="currentLanguage"
           :bilingual="bilingual"
           :image-library="imageLibrary"
