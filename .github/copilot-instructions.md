@@ -18,7 +18,7 @@ Use this section to capture app-specific rules before coding starts.
 
 - Replace `Your App Name Here` in this file and `README.md`
 - Verify `package.json` is no longer `vue-fm-web-viewer-start` (auto-checked on `npm install`)
-- Set the real `loadScript` in `src/main.js`
+- Set the real `readyScript` in `src/main.js`
 - Define and document `setup(json)` payload keys
 - Replace all `_TBD_` and placeholder bullets in this section
 
@@ -95,11 +95,11 @@ The production build outputs one self-contained `index.html` (inline JS + CSS), 
 - Utility for exposing additional global functions callable from FileMaker scripts
 - Use sparingly; keep FileMaker-facing API explicit and stable
 
-#### `fmBootstrap({ loadScript, timeoutMs })`
+#### `fmBootstrap({ readyScript, timeoutMs })`
 
 - Called from `main.js` during startup
 - Exposes `window.setup`
-- Queues optional `loadScript` call (for “viewer ready” handshake)
+- Queues optional `readyScript` call (for “viewer ready” handshake)
 - Starts FileMaker readiness watch
 - On timeout:
   - In `DEV`: loads `src/devModel.json` and feeds it through `setup()`
@@ -107,9 +107,9 @@ The production build outputs one self-contained `index.html` (inline JS + CSS), 
 
 ### Startup & Data Flow
 
-1. `main.js` calls `fmBootstrap({ loadScript: 'JS My App Load' })`
+1. `main.js` calls `fmBootstrap({ readyScript: 'JS My App Load' })`
 2. `fmBootstrap()` exposes `window.setup`
-3. App notifies FileMaker by calling `loadScript` through `fmPerform()`
+3. App notifies FileMaker by calling `readyScript` through `fmPerform()`
 4. FileMaker responds by calling `setup(json)`
 5. `setup()` merges data into `model`
 6. Vue UI reacts automatically
@@ -146,7 +146,7 @@ Use this section only when migrating an existing FMVue app.
 - Replace direct `FileMaker.PerformScript(...)` calls with `fmPerform(scriptName, param)`
 - Do not carry over FMVue payload conventions that embed script names in JSON payloads
 - If older code stringified params manually, remove that when switching to `fmPerform()`
-- Move “viewer ready” script call from component `mounted()` into `fmBootstrap({ loadScript })` in `main.js`
+- Move “viewer ready” script call from component `mounted()` into `fmBootstrap({ readyScript })` in `main.js`
 - Replace custom `setup()` plumbing with built-in `setup()` in `fm.js`
 - Move any post-setup logic into `onSetup(() => { ... })`
 - Some FMVue apps did not use setup(), and instead merged incoming data directly into the source code at "[[data_model]]". In that case, refactor to use `setup()`.
