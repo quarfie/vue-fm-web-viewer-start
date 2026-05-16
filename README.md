@@ -7,7 +7,7 @@
 - Update this section first when creating a new app from this template.
 - App name: _TBD_
 - Purpose: _1-2 sentence summary of what this web viewer does_
-- FileMaker ready script (`loadScript`): _e.g. `JS My App Load`_
+- FileMaker ready script (`readyScript`): _e.g. `JS My App Load`_
 - FileMaker -> Web entry point: `setup(json)`
 - Setup payload shape: _list required + optional keys_
 - Known constraints: _layout assumptions, privileges, env requirements_
@@ -18,7 +18,7 @@
 - Rename the project folder to your real app name, then run `npm install`.
 - If `package.json` is still `vue-fm-web-viewer-start`, install auto-updates it to a sanitized version of the current folder name.
 
-- Set the real `loadScript` in `src/main.js`
+- Set the real `readyScript` in `src/main.js`
 - Confirm `setup(json)` payload keys and update docs to match
 - Replace placeholder values in **App Notes**
 
@@ -154,13 +154,13 @@ onSetup((data) => {
 
 On startup, the web app queues a call to a FileMaker "load" script so FileMaker knows the web viewer is ready and can respond by calling setup(json).
 
-The script name is configured in main.js: `fmBootstrap({ loadScript: 'JS My App Load' })`
+The script name is configured in main.js: `fmBootstrap({ readyScript: 'JS My App Load' })`
 
 The FileMaker detection timeout is also configurable:
 
 ```js
 fmBootstrap({
-  loadScript: 'JS My App Load',
+  readyScript: 'JS My App Load',
   timeoutMs: 1500,
 })
 ```
