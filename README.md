@@ -2,9 +2,37 @@
 
 **Made with vue-fm-web-viewer-start**
 
+## Getting Started (New Project)
+
+Recommended workflow: create a new repository from this template first, then clone that new repository locally.
+
+1. In GitHub, open this repository and click **Use this template**.
+2. Create a new repository for your app (name, owner, visibility).
+3. In VS Code, open a new window and run **Clone Git Repository...**.
+4. Choose **Clone from GitHub** and select your newly created app repository.
+5. Open the cloned folder in VS Code.
+6. Run:
+
+```bash
+npm install
+npm run dev
+```
+
+7. (Optional but recommended) Verify `origin` points to your new app repo:
+
+```bash
+git remote -v
+```
+
+8. Replace `Your App Name Here` in this file and `.github/copilot-instructions.md`
+9. Verify that install updated the app name in `package.json` to a sanitized version of the current folder name.
+10. Set the real `readyScript` in `src/main.js`
+11. Confirm `setup(json)` payload keys and update docs to match
+12. Replace placeholder values in **App Notes**
+13. Remove this Getting Started section.
+
 ## App Notes (customize this section for your app)
 
-- Update this section first when creating a new app from this template.
 - App name: _TBD_
 - Purpose: _1-2 sentence summary of what this web viewer does_
 - FileMaker ready script (`readyScript`): _e.g. `JS My App Load`_
@@ -12,25 +40,15 @@
 - Setup payload shape: _list required + optional keys_
 - Known constraints: _layout assumptions, privileges, env requirements_
 
-### New App Checklist
+---
 
-- Replace `Your App Name Here` in this file and `.github/copilot-instructions.md`
-- Rename the project folder to your real app name, then run `npm install`.
-- If `package.json` is still `vue-fm-web-viewer-start`, install auto-updates it to a sanitized version of the current folder name.
-
-- Set the real `readyScript` in `src/main.js`
-- Confirm `setup(json)` payload keys and update docs to match
-- Replace placeholder values in **App Notes**
-
-## vue-fm-web-viewer-start
+## fm-web-viewer-start Template Reference (keep)
 
 This repository is a starter template for building **FileMaker Web Viewer apps**
 using **Vue 3**, **Vite**, and **TailwindCSS**.
 
 The app is designed to build into a **single self-contained HTML file**
 (inline JS + CSS) that can be stored in a FileMaker record and loaded via a Web Viewer.
-
----
 
 ### Goals
 

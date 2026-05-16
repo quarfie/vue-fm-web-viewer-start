@@ -2,6 +2,35 @@
 
 **Made with vue-fm-web-viewer-start**
 
+## Getting Started (New Project)
+
+Recommended workflow: create a new repository from this template first, then clone that new repository locally.
+
+1. In GitHub, open this repository and click **Use this template**.
+2. Create a new repository for your app (name, owner, visibility).
+3. In VS Code, open a new window and run **Clone Git Repository...**.
+4. Choose **Clone from GitHub** and select your newly created app repository.
+5. Open the cloned folder in VS Code.
+6. Run:
+
+```bash
+npm install
+npm run dev
+```
+
+7. (Optional but recommended) Verify `origin` points to your new app repo:
+
+```bash
+git remote -v
+```
+
+8. Replace `Your App Name Here` in this file and `README.md`
+9. Verify that install updated the app name in `package.json` to a sanitized version of the current folder name.
+10. Set the real `readyScript` in `src/main.js`
+11. Confirm `setup(json)` payload keys and update docs to match
+12. Replace placeholder values in **App Notes**
+13. Remove this Getting Started section.
+
 ## App Notes (customize this section for your app)
 
 Use this section to capture app-specific rules before coding starts.
@@ -16,11 +45,47 @@ Use this section to capture app-specific rules before coding starts.
 
 ### New App Checklist
 
+- Verify this repo is your app repo, not the template repo (`git remote -v`)
+- Run `npm install`
+- Run `npm run dev`
 - Replace `Your App Name Here` in this file and `README.md`
 - Verify `package.json` is no longer `vue-fm-web-viewer-start` (auto-checked on `npm install`)
 - Set the real `readyScript` in `src/main.js`
 - Define and document `setup(json)` payload keys
 - Replace all `_TBD_` and placeholder bullets in this section
+- Remove the Getting Started section after initial setup is complete
+
+## Copilot Startup Behavior
+
+When work begins in this repo, Copilot should check whether this is:
+
+1. The template repository itself
+2. A new app repository created from this template
+
+Use these signals together (not one signal alone):
+
+- `git remote -v` origin still points to `vue-fm-web-viewer-start` (likely template repo)
+- `README.md` or this file still contains `Your App Name Here` or `_TBD_`
+- `README.md` still includes the Getting Started section
+- `package.json` still has template package naming
+
+If this looks like a new app repo created from the template, Copilot should proactively execute setup steps it can perform safely:
+
+1. Run `npm install` (if dependencies are not installed)
+2. Offer to run `npm run dev` (start when user confirms)
+3. Verify `package.json` name changed away from template name
+4. Report which setup items are complete vs pending
+
+If this still looks like the template repository, Copilot should avoid making app-specific assumptions and ask whether to:
+
+1. Customize this repo in place, or
+2. Create/clone a new repo from the template first
+
+Behavior guardrails:
+
+- Prefer non-destructive automation first
+- Do not remove the Getting Started section automatically unless asked
+- Do not invent FileMaker script names or setup payload keys; request them or infer from existing code/docs
 
 ## vue-fm-web-viewer-start
 
@@ -76,7 +141,8 @@ The production build outputs one self-contained `index.html` (inline JS + CSS), 
 - Primary Web → FileMaker call path
 - `param` may be string, object, array, number, boolean, `null`, or `undefined`
 - Objects/arrays are JSON-stringified automatically
-- Calls are queued until `window.FileMaker.PerformScript` becomes available
+- Calls are queued while FileMaker availability is being probed
+- If FileMaker is not detected before timeout, queued calls are dropped and future calls fail fast (logged) instead of queueing forever
 
 #### `setup(jsonOrObject)`
 
